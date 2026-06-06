@@ -3,7 +3,7 @@
 const DEFAULT_S = {
   title: 'My CCT',
   startDate: new Date().toISOString().slice(0,10),
-  seed: 100, fx: 1400, goal: 10000,
+  seed: 100, fx: 1400, goal: 10000, fxAuto: true,
 };
 
 let S = {...DEFAULT_S}, E = [], currentUser = null, lineChart = null;
@@ -29,13 +29,40 @@ async function doLogout() {
   location.href = './auth.html';
 }
 
+// ── 환율 자동 연동 ───────────────────────────
+async function fetchFx() {
+  try {
+    const res = await fetch('https://api.binance.com/api/v3/ticker/price?symbol=USDTKRW');
+    if (res.ok) {
+      const data = await res.json();
+      S.fx = Math.round(parseFloat(data.price));
+    }
+  } catch(_) {
+    // 실패 시 기존 환율 유지
+  }
+  render();
+}
+
+async function toggleFxAuto() {
+  S.fxAuto = !S.fxAuto;
+  renderSettingsForm();
+  if (S.fxAuto) {
+    await fetchFx();
+    toast('환율 자동 연동 켜짐 — ₩' + S.fx.toLocaleString());
+  } else {
+    toast('수동 입력으로 변경됐어요');
+  }
+  persist();
+}
+
 // ── DB ───────────────────────────────────────
 async function loadFromDB() {
   const { data: sd } = await db.from('cct_settings').select('*').eq('user_id', currentUser.id).single();
   if (sd) S = { ...DEFAULT_S, ...JSON.parse(sd.data) };
   const { data: ed } = await db.from('cct_entries').select('*').eq('user_id', currentUser.id).order('date', { ascending: true });
   if (ed) E = ed.map(r => ({ date: r.date, asset: +r.asset, memo: r.memo || '' }));
-  render();
+  if (S.fxAuto) await fetchFx();
+  else render();
 }
 
 async function persist() {
@@ -106,11 +133,11 @@ function render() {
   document.getElementById('r3').innerHTML =
     M('역대 최고 하루 수익', '+$' + best.toFixed(2), 'pos sm') +
     M('역대 최악 하루 손실', '$' + worst.toFixed(2), 'neg sm') +
-    M('현재 총자산', '$' + last.asset.toFixed(2), 'sm');
+    M('환율', '₩' + S.fx.toLocaleString() + (S.fxAuto ? ' 🔄' : ''), 'sm', 'KRW/USDT');
 
   document.getElementById('r4').innerHTML =
+    M('현재 총자산', '$' + last.asset.toFixed(2), 'sm') +
     M('초기 시드', '$' + S.seed, 'sm') +
-    M('환율', '₩' + S.fx.toLocaleString(), 'sm', 'KRW/USDT') +
     M('목표', '$' + S.goal.toLocaleString(), 'sm');
 
   const pct = Math.min((last.asset / S.goal) * 100, 100);
@@ -203,23 +230,38 @@ function renderCapture(data) {
   document.getElementById('cap-pnl-pct').textContent = sgn(lastEntry.pct, 2) + '%  당일 수익률';
   document.getElementById('cap-pnl-pct').style.color = c;
 
-  // 자랑스러운 것만 — 최악 제거
+  // 자랑스러운 것만 — 총자산+원화 짝으로, 최악 제거
   document.getElementById('cap-grid').innerHTML = [
-    { l: '현재 총자산',       v: '$' + last.asset.toFixed(2) },
-    { l: '총 수익률',         v: sgn(last.cumPct, 2) + '%'   },
-    { l: '역대 최고 하루 수익', v: '+$' + best.toFixed(2)     },
-    { l: '총 수익 (USDT)',    v: sgn(last.cumPnl) + '$'      },
-    { l: '원화 환산',         v: krwFmt(last.krw)            },
-    { l: '투자 기간',         v: days + ' Days'              },
-  ].map(it => `<div class="cap-card"><div class="cap-card-lbl">${it.l}</div><div class="cap-card-val">${it.v}</div></div>`).join('');
+    { l: '현재 총자산',         v: '$' + last.asset.toFixed(2) },
+    { l: '원화 환산',           v: krwFmt(last.krw), sub: '현재 총자산 기준' },
+    { l: '총 수익률',           v: sgn(last.cumPct, 2) + '%'   },
+    { l: '총 수익 (USDT)',      v: sgn(last.cumPnl) + '$'      },
+    { l: '역대 최고 하루 수익', v: '+$' + best.toFixed(2)      },
+    { l: '투자 기간',           v: days + ' Days'              },
+  ].map(it => `<div class="cap-card"><div class="cap-card-lbl">${it.l}</div><div class="cap-card-val">${it.v}</div>${it.sub ? `<div style="font-size:10px;color:rgba(255,255,255,.3);margin-top:3px">${it.sub}</div>` : ''}</div>`).join('');
 }
 
 function renderSettingsForm() {
   document.getElementById('s-title').value = S.title;
   document.getElementById('s-start').value = S.startDate;
   document.getElementById('s-seed').value = S.seed;
-  document.getElementById('s-fx').value = S.fx;
   document.getElementById('s-goal').value = S.goal;
+
+  // 환율 토글
+  const auto = S.fxAuto;
+  const toggle = document.getElementById('fx-toggle');
+  const knob = document.getElementById('fx-knob');
+  const lbl = document.getElementById('fx-toggle-lbl');
+  const manualRow = document.getElementById('fx-manual-row');
+  const sub = document.getElementById('fx-sub');
+  if (toggle) {
+    toggle.style.background = auto ? 'var(--green)' : 'var(--bg3)';
+    knob.style.left = auto ? '20px' : '2px';
+    lbl.textContent = auto ? '자동' : '수동';
+    manualRow.style.display = auto ? 'none' : 'flex';
+    sub.textContent = auto ? `바이낸스 실시간 · 현재 ₩${S.fx.toLocaleString()}` : '직접 입력';
+    if (!auto) document.getElementById('s-fx').value = S.fx;
+  }
 }
 
 // ── 탭 ───────────────────────────────────────
@@ -275,8 +317,10 @@ function saveSettings() {
   S.title = document.getElementById('s-title').value || S.title;
   S.startDate = document.getElementById('s-start').value || S.startDate;
   S.seed = parseFloat(document.getElementById('s-seed').value) || S.seed;
-  S.fx = parseInt(document.getElementById('s-fx').value) || S.fx;
   S.goal = parseFloat(document.getElementById('s-goal').value) || S.goal;
+  if (!S.fxAuto) {
+    S.fx = parseInt(document.getElementById('s-fx').value) || S.fx;
+  }
   persist(); render(); showTab('dashboard');
   toast('설정이 저장됐어요');
 }
