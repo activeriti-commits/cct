@@ -190,30 +190,27 @@ function renderMonthly(data) {
 
 function renderCapture(data) {
   if (!data.length) return;
-  const { best, worst, last, days } = calcStats(data);
-  // 마지막 기록 날짜 기준 (오늘 기록 안 했을 수도 있으니)
+  const { best, last, days } = calcStats(data);
   const lastEntry = data[data.length-1];
-  const lastDate = lastEntry.date;
 
   document.getElementById('cap-title').textContent = S.title;
-  document.getElementById('cap-meta').textContent =
-    `${days} Days · ${lastDate} 기준 · 시작일 ${S.startDate}`;
+  document.getElementById('cap-meta').textContent = `${days} Days · 시작일 ${S.startDate}`;
 
   const c = lastEntry.pnl >= 0 ? '#00c48c' : '#ff4d6a';
   document.getElementById('cap-pnl-val').textContent =
     (lastEntry.pnl >= 0 ? '+' : '') + '$' + lastEntry.pnl.toFixed(2);
   document.getElementById('cap-pnl-val').style.color = c;
-  document.getElementById('cap-pnl-pct').textContent =
-    sgn(lastEntry.pct, 2) + '%  당일 수익률';
+  document.getElementById('cap-pnl-pct').textContent = sgn(lastEntry.pct, 2) + '%  당일 수익률';
   document.getElementById('cap-pnl-pct').style.color = c;
 
+  // 자랑스러운 것만 — 최악 제거
   document.getElementById('cap-grid').innerHTML = [
-    { l: '현재 총자산', v: '$' + last.asset.toFixed(2) },
-    { l: '총 수익률',   v: sgn(last.cumPct, 2) + '%' },
-    { l: '역대 최고 하루 수익', v: '+$' + best.toFixed(2) },
-    { l: '역대 최악 하루 손실', v: '$' + worst.toFixed(2) },
-    { l: '원화 환산',   v: krwFmt(last.krw) },
-    { l: '총 수익 (USDT)', v: sgn(last.cumPnl) + '$' },
+    { l: '현재 총자산',       v: '$' + last.asset.toFixed(2) },
+    { l: '총 수익률',         v: sgn(last.cumPct, 2) + '%'   },
+    { l: '역대 최고 하루 수익', v: '+$' + best.toFixed(2)     },
+    { l: '총 수익 (USDT)',    v: sgn(last.cumPnl) + '$'      },
+    { l: '원화 환산',         v: krwFmt(last.krw)            },
+    { l: '투자 기간',         v: days + ' Days'              },
   ].map(it => `<div class="cap-card"><div class="cap-card-lbl">${it.l}</div><div class="cap-card-val">${it.v}</div></div>`).join('');
 }
 

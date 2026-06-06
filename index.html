@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>CCT — Crypto Currency Trader</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <style>
 :root{--bg:#0f1117;--bg2:#161b27;--bg3:#1e2535;--border:rgba(255,255,255,0.07);--text:#e8eaf0;--text2:#8892a4;--text3:#4d5566;--green:#00c48c;--green-dim:rgba(0,196,140,0.12);--red:#ff4d6a;--red-dim:rgba(255,77,106,0.12);--accent:#3d7eff;--r:10px;--font:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;--sidebar:220px;--bottom-bar:60px}
@@ -246,14 +247,15 @@ input:focus{border-color:var(--accent)}
       <div class="page-title">캡처</div>
       <div class="page-sub">아래 카드를 스크린샷으로 저장하세요</div>
     </div>
-    <div style="display:flex;gap:8px;margin-bottom:1rem;flex-wrap:wrap;align-items:center">
-      <div style="background:var(--bg2);border:1px solid var(--border);border-radius:6px;padding:8px 14px;font-size:12px;color:var(--text3)">
-        📸 &nbsp;Windows: <b style="color:var(--text2)">Win + Shift + S</b> &nbsp;·&nbsp; Mac: <b style="color:var(--text2)">Cmd + Shift + 4</b>
-      </div>
-      <button class="btn btn-p" onclick="scrollToCard()" style="font-size:13px;padding:8px 16px">카드로 이동 ↓</button>
+    <div style="margin-bottom:1.25rem">
+      <button class="btn btn-p" onclick="doCapture()" id="cap-btn" style="font-size:14px;padding:10px 24px;display:flex;align-items:center;gap:8px">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
+        이미지로 저장
+      </button>
+      <div style="font-size:12px;color:var(--text3);margin-top:8px">버튼을 누르면 자동으로 이미지가 다운로드돼요</div>
     </div>
     <div id="cap-ov" style="display:block;position:static;background:transparent;padding:0;overflow:visible">
-      <div class="cap-inner" style="max-width:100%">
+      <div class="cap-inner" style="max-width:520px">
         <div id="capture-card" style="background:linear-gradient(145deg,#0a0f1e 0%,#0d1f18 50%,#0a0f1e 100%);border-radius:16px;padding:2rem">
           <div class="cap-tag">CCT · Crypto Currency Trader</div>
           <div class="cap-title" id="cap-title"></div>
@@ -317,8 +319,23 @@ input:focus{border-color:var(--accent)}
 
 <script src="./supabase.js"></script>
 <script>
-function scrollToCard(){
-  document.getElementById('capture-card')?.scrollIntoView({behavior:'smooth',block:'start'});
+async function doCapture(){
+  const btn = document.getElementById('cap-btn');
+  btn.textContent = '저장 중...'; btn.disabled = true;
+  try {
+    const card = document.getElementById('capture-card');
+    const canvas = await html2canvas(card, {
+      backgroundColor: null, scale: 2, useCORS: true,
+      logging: false
+    });
+    const link = document.createElement('a');
+    const title = (document.getElementById('cap-title').textContent || 'CCT').replace(/\s+/g,'_');
+    link.download = title + '_' + new Date().toISOString().slice(0,10) + '.png';
+    link.href = canvas.toDataURL('image/png');
+    link.click();
+  } catch(e) { console.error(e); }
+  btn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg> 이미지로 저장';
+  btn.disabled = false;
 }
 window._supabase.auth.getSession().then(({data:{session}})=>{
   if(!session) location.href='./auth.html';
