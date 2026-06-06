@@ -42,25 +42,12 @@ function updateAuthUI() {
     action.textContent = '로그아웃';
     action.onclick = handleLogout;
   } else {
-    avatar.textContent = '?';
-    name.textContent = '로그인 필요';
-    action.textContent = '로그인 →';
-    action.onclick = handleAuth;
+    location.href = './auth.html';
   }
 }
 
 async function handleAuth() {
-  const email = prompt('이메일을 입력하세요:');
-  if (!email) return;
-  const password = prompt('비밀번호를 입력하세요:');
-  if (!password) return;
-  const { error } = await db.auth.signInWithPassword({ email, password });
-  if (error) {
-    // 로그인 실패 시 회원가입 시도
-    const { error: signUpError } = await db.auth.signUp({ email, password });
-    if (signUpError) alert('오류: ' + signUpError.message);
-    else alert('가입 완료! 이메일 확인 후 로그인하세요.');
-  }
+  location.href = './auth.html';
 }
 
 async function handleLogout() {

@@ -401,6 +401,12 @@ input:focus { border-color: var(--accent); }
 </div>
 
 <script src="./supabase.js"></script>
+<script>
+// 비로그인이면 auth.html로
+window._supabase.auth.getSession().then(({ data: { session } }) => {
+  if (!session) location.href = './auth.html';
+});
+</script>
 <script src="./app.js"></script>
 </body>
 </html>
