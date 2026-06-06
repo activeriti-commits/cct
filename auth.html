@@ -99,7 +99,7 @@ input::placeholder{color:var(--text3)}
       </div>
       <div class="fg"><label class="fl">비밀번호 확인</label>
         <div class="pw-wrap">
-          <input type="password" id="s-pw2" placeholder="비밀번호 재입력" autocomplete="new-password">
+          <input type="password" id="s-pw2" placeholder="비밀번호 재입력" autocomplete="new-password" oninput="checkPw2()">
           <button class="eye" onclick="togglePw('s-pw2',this)" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button>
         </div>
       </div>
@@ -239,6 +239,13 @@ async function doForgot(){
   setMsg(error?'메일 발송에 실패했어요.':'재설정 링크를 보냈어요. 이메일을 확인해주세요.',error?'err':'ok','forgot-msg');
 }
 
+function checkPw2(){
+  const pw=document.getElementById("s-pw").value;
+  const pw2=document.getElementById("s-pw2").value;
+  const el=document.getElementById("s-pw2");
+  if(!pw2) { el.style.borderColor=""; return; }
+  el.style.borderColor = pw===pw2 ? "var(--green)" : "var(--red)";
+}
 async function resend(){
   if(!lastEmail)return;
   await db.auth.resend({type:'signup',email:lastEmail});

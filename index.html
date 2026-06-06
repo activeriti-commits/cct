@@ -246,13 +246,19 @@ input:focus{border-color:var(--accent)}
       <div class="page-title">캡처</div>
       <div class="page-sub">아래 카드를 스크린샷으로 저장하세요</div>
     </div>
+    <div style="display:flex;gap:8px;margin-bottom:1rem;flex-wrap:wrap;align-items:center">
+      <div style="background:var(--bg2);border:1px solid var(--border);border-radius:6px;padding:8px 14px;font-size:12px;color:var(--text3)">
+        📸 &nbsp;Windows: <b style="color:var(--text2)">Win + Shift + S</b> &nbsp;·&nbsp; Mac: <b style="color:var(--text2)">Cmd + Shift + 4</b>
+      </div>
+      <button class="btn btn-p" onclick="scrollToCard()" style="font-size:13px;padding:8px 16px">카드로 이동 ↓</button>
+    </div>
     <div id="cap-ov" style="display:block;position:static;background:transparent;padding:0;overflow:visible">
       <div class="cap-inner" style="max-width:100%">
-        <div style="background:linear-gradient(145deg,#0a0f1e 0%,#0d1f18 50%,#0a0f1e 100%);border-radius:16px;padding:2rem">
+        <div id="capture-card" style="background:linear-gradient(145deg,#0a0f1e 0%,#0d1f18 50%,#0a0f1e 100%);border-radius:16px;padding:2rem">
           <div class="cap-tag">CCT · Crypto Currency Trader</div>
           <div class="cap-title" id="cap-title"></div>
           <div class="cap-meta" id="cap-meta"></div>
-          <div class="cap-pnl-lbl">오늘 수익</div>
+          <div class="cap-pnl-lbl">최근 수익</div>
           <div class="cap-pnl-val" id="cap-pnl-val"></div>
           <div class="cap-pnl-pct" id="cap-pnl-pct"></div>
           <div class="cap-div"></div>
@@ -278,7 +284,7 @@ input:focus{border-color:var(--accent)}
       <div class="s-row"><div class="s-lbl">목표 금액 (USDT)</div><input type="number" id="s-goal" step="1" class="s-inp"></div>
       <div class="btn-row" style="margin-top:16px">
         <button class="btn btn-p" onclick="saveSettings()">저장</button>
-        <button class="btn btn-d" onclick="resetAll()">전체 초기화</button>
+        <button class="btn btn-d" id="btn-reset" onclick="resetAll()">전체 초기화</button>
       </div>
     </div>
   </div>
@@ -311,6 +317,9 @@ input:focus{border-color:var(--accent)}
 
 <script src="./supabase.js"></script>
 <script>
+function scrollToCard(){
+  document.getElementById('capture-card')?.scrollIntoView({behavior:'smooth',block:'start'});
+}
 window._supabase.auth.getSession().then(({data:{session}})=>{
   if(!session) location.href='./auth.html';
 });

@@ -74,6 +74,18 @@ const DAYS = ['일','월','화','수','목','금','토'];
 const M = (label, val, cls='', sub='') =>
   `<div class="metric"><div class="ml">${label}</div><div class="mv ${cls}">${val}</div>${sub ? `<div class="ms">${sub}</div>` : ''}</div>`;
 
+// ── 토스트 ────────────────────────────────────
+function toast(msg, type='ok') {
+  const el = document.createElement('div');
+  el.textContent = msg;
+  el.style.cssText = `position:fixed;bottom:80px;left:50%;transform:translateX(-50%);
+    background:${type==='ok'?'var(--green)':'var(--red)'};color:#fff;
+    padding:10px 20px;border-radius:8px;font-size:13px;z-index:9999;
+    box-shadow:0 4px 12px rgba(0,0,0,.3);transition:opacity .3s`;
+  document.body.appendChild(el);
+  setTimeout(() => { el.style.opacity='0'; setTimeout(() => el.remove(), 300); }, 2000);
+}
+
 // ── 렌더 ─────────────────────────────────────
 function render() {
   if (!E.length) { renderEmpty(); return; }
@@ -177,21 +189,30 @@ function renderMonthly(data) {
 }
 
 function renderCapture(data) {
+  if (!data.length) return;
   const { best, worst, last, days } = calcStats(data);
-  const today = data[data.length-1];
+  // 마지막 기록 날짜 기준 (오늘 기록 안 했을 수도 있으니)
+  const lastEntry = data[data.length-1];
+  const lastDate = lastEntry.date;
+
   document.getElementById('cap-title').textContent = S.title;
-  document.getElementById('cap-meta').textContent = `${days} Days · ${new Date().toLocaleDateString('ko-KR')} · 시작일 ${S.startDate}`;
-  const c = today.pnl >= 0 ? '#00c48c' : '#ff4d6a';
-  document.getElementById('cap-pnl-val').textContent = (today.pnl >= 0 ? '+' : '') + '$' + today.pnl.toFixed(2);
+  document.getElementById('cap-meta').textContent =
+    `${days} Days · ${lastDate} 기준 · 시작일 ${S.startDate}`;
+
+  const c = lastEntry.pnl >= 0 ? '#00c48c' : '#ff4d6a';
+  document.getElementById('cap-pnl-val').textContent =
+    (lastEntry.pnl >= 0 ? '+' : '') + '$' + lastEntry.pnl.toFixed(2);
   document.getElementById('cap-pnl-val').style.color = c;
-  document.getElementById('cap-pnl-pct').textContent = sgn(today.pct, 2) + '%  당일 수익률';
+  document.getElementById('cap-pnl-pct').textContent =
+    sgn(lastEntry.pct, 2) + '%  당일 수익률';
   document.getElementById('cap-pnl-pct').style.color = c;
+
   document.getElementById('cap-grid').innerHTML = [
     { l: '현재 총자산', v: '$' + last.asset.toFixed(2) },
-    { l: '총 수익률', v: sgn(last.cumPct, 2) + '%' },
+    { l: '총 수익률',   v: sgn(last.cumPct, 2) + '%' },
     { l: '역대 최고 하루 수익', v: '+$' + best.toFixed(2) },
     { l: '역대 최악 하루 손실', v: '$' + worst.toFixed(2) },
-    { l: '원화 환산', v: krwFmt(last.krw) },
+    { l: '원화 환산',   v: krwFmt(last.krw) },
     { l: '총 수익 (USDT)', v: sgn(last.cumPnl) + '$' },
   ].map(it => `<div class="cap-card"><div class="cap-card-lbl">${it.l}</div><div class="cap-card-val">${it.v}</div></div>`).join('');
 }
@@ -225,7 +246,21 @@ function addEntry() {
   const idx = E.findIndex(e => e.date === date);
   if (idx >= 0) E[idx] = { date, asset, memo };
   else { E.push({ date, asset, memo }); E.sort((a, b) => a.date.localeCompare(b.date)); }
-  persist(); render(); clearInputs();
+  persist(); render(); setNextDate();
+}
+
+function setNextDate() {
+  // 기록 추가 후 다음날 날짜로 자동 세팅
+  if (E.length > 0) {
+    const last = E[E.length-1].date;
+    const next = new Date(last+'T00:00:00');
+    next.setDate(next.getDate() + 1);
+    document.getElementById('inp-date').value = next.toISOString().slice(0,10);
+  } else {
+    document.getElementById('inp-date').value = new Date().toISOString().slice(0,10);
+  }
+  document.getElementById('inp-asset').value = '';
+  document.getElementById('inp-memo').value = '';
 }
 
 function clearInputs() {
@@ -246,11 +281,21 @@ function saveSettings() {
   S.fx = parseInt(document.getElementById('s-fx').value) || S.fx;
   S.goal = parseFloat(document.getElementById('s-goal').value) || S.goal;
   persist(); render(); showTab('dashboard');
+  toast('설정이 저장됐어요');
 }
 
 function resetAll() {
+  // confirm 대신 인라인 확인 UI 사용
+  const btn = document.getElementById('btn-reset');
+  if (btn.dataset.confirm !== 'yes') {
+    btn.textContent = '정말 초기화할까요? 한 번 더 클릭';
+    btn.dataset.confirm = 'yes';
+    setTimeout(() => { btn.textContent = '전체 초기화'; btn.dataset.confirm = ''; }, 3000);
+    return;
+  }
   E = []; S = { ...DEFAULT_S };
   persist(); render(); showTab('dashboard');
+  toast('초기화됐어요', 'err');
 }
 
 // 엔터 → 기록 추가
@@ -258,4 +303,11 @@ document.addEventListener('keydown', e => {
   if (e.key === 'Enter' && !document.getElementById('tab-log').classList.contains('hidden')) addEntry();
 });
 
+// ── 캡처 안내 ─────────────────────────────────
+function showCaptureGuide() {
+  const guide = document.getElementById('cap-guide');
+  guide.style.display = guide.style.display === 'none' ? 'block' : 'none';
+}
+
+// 초기화
 clearInputs();
