@@ -98,7 +98,6 @@ function render() {
 
   document.getElementById('r4').innerHTML =
     M('초기 시드', '$' + S.seed, 'sm') +
-    M('기록 수', data.length + '건', 'sm') +
     M('환율', '₩' + S.fx.toLocaleString(), 'sm', 'KRW/USDT') +
     M('목표', '$' + S.goal.toLocaleString(), 'sm');
 
