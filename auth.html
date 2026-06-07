@@ -127,6 +127,37 @@ input::placeholder{color:var(--text3)}
     <button class="btn btn-p" onclick="resend()">인증 메일 다시 보내기</button>
     <button class="btn btn-g" onclick="showAuth()">로그인으로 돌아가기</button>
   </div>
+  <!-- 비밀번호 재설정 폼 -->
+  <div class="card" id="c-reset" style="display:none">
+    <div class="h2" style="margin-bottom:6px">새 비밀번호 설정</div>
+    <div class="sub">새로 사용할 비밀번호를 입력해주세요</div>
+    <div class="msg" id="reset-msg"></div>
+    <div class="fg" style="margin-bottom:1rem">
+      <label class="fl">새 비밀번호</label>
+      <div class="pw-wrap">
+        <input type="password" id="r-pw" placeholder="8자 이상" oninput="checkStr(this.value)">
+        <button class="eye" onclick="togglePw('r-pw',this)" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button>
+      </div>
+      <div class="str-bar"><div class="str-fill" id="str-fill"></div></div>
+      <div class="str-label" id="str-lbl"></div>
+    </div>
+    <div class="fg" style="margin-bottom:0">
+      <label class="fl">비밀번호 확인</label>
+      <div class="pw-wrap">
+        <input type="password" id="r-pw2" placeholder="비밀번호 재입력" oninput="checkPw2()">
+        <button class="eye" onclick="togglePw('r-pw2',this)" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button>
+      </div>
+    </div>
+    <button class="btn btn-p" id="btn-reset" onclick="doReset()" style="margin-top:1rem">비밀번호 변경</button>
+  </div>
+
+  <!-- 이메일 인증 완료 -->
+  <div class="card center" id="c-verify-done" style="display:none">
+    <div class="big">✅</div>
+    <div class="h2" style="margin-bottom:8px">인증 완료!</div>
+    <div class="sub">잠시 후 자동으로 이동합니다...</div>
+  </div>
+
 </div>
 
 <script src="./supabase.js"></script>
@@ -134,7 +165,24 @@ input::placeholder{color:var(--text3)}
 const db = window._supabase;
 let tab = 'login', lastEmail = '';
 
-db.auth.getSession().then(({data:{session}}) => { if(session) location.href='./index.html'; });
+// URL 토큰 처리 (비번 재설정 / 이메일 인증)
+const hash = window.location.hash;
+const params = new URLSearchParams(hash.replace('#',''));
+const tokenType = params.get('type');
+const accessToken = params.get('access_token');
+const refreshToken = params.get('refresh_token');
+
+if (tokenType === 'recovery' && accessToken) {
+  // 비밀번호 재설정 링크 클릭 → 재설정 폼 보여주기
+  db.auth.setSession({ access_token: accessToken, refresh_token: refreshToken || '' })
+    .then(() => showResetPw());
+} else if (tokenType === 'signup' && accessToken) {
+  // 이메일 인증 완료 → 자동 로그인 후 앱으로
+  db.auth.setSession({ access_token: accessToken, refresh_token: refreshToken || '' })
+    .then(() => { showVerifyDone(); setTimeout(() => location.href='./index.html', 2000); });
+} else {
+  db.auth.getSession().then(({data:{session}}) => { if(session) location.href='./index.html'; });
+}
 
 function switchTab(t) {
   tab = t;
@@ -250,6 +298,44 @@ async function resend(){
   if(!lastEmail)return;
   await db.auth.resend({type:'signup',email:lastEmail});
   setMsg('인증 메일을 다시 보냈어요.','ok','auth-msg');
+}
+
+function showResetPw() {
+  ['c-auth','c-forgot','c-verify','c-verify-done'].forEach(id => {
+    document.getElementById(id).style.display='none';
+  });
+  document.getElementById('c-reset').style.display='block';
+}
+
+function showVerifyDone() {
+  ['c-auth','c-forgot','c-verify','c-reset'].forEach(id => {
+    document.getElementById(id).style.display='none';
+  });
+  document.getElementById('c-verify-done').style.display='block';
+}
+
+async function doReset() {
+  const pw = document.getElementById('r-pw').value;
+  const pw2 = document.getElementById('r-pw2').value;
+  if (!pw || !pw2) { setMsg('비밀번호를 입력해주세요.','err','reset-msg'); return; }
+  if (pw !== pw2) { setMsg('비밀번호가 일치하지 않아요.','err','reset-msg'); return; }
+  if (pw.length < 8) { setMsg('비밀번호는 8자 이상이어야 해요.','err','reset-msg'); return; }
+  setLoading('btn-reset', true, '비밀번호 변경');
+  const { error } = await db.auth.updateUser({ password: pw });
+  setLoading('btn-reset', false, '비밀번호 변경');
+  if (error) {
+    setMsg('변경에 실패했어요. 다시 시도해주세요.','err','reset-msg');
+  } else {
+    setMsg('비밀번호가 변경됐어요! 잠시 후 이동합니다.','ok','reset-msg');
+    setTimeout(() => location.href='./index.html', 2000);
+  }
+}
+
+function checkPw2() {
+  const pw = document.getElementById('s-pw') ? document.getElementById('s-pw').value : document.getElementById('r-pw').value;
+  const pw2El = document.getElementById('s-pw2') || document.getElementById('r-pw2');
+  if (!pw2El.value) { pw2El.style.borderColor=''; return; }
+  pw2El.style.borderColor = pw === pw2El.value ? 'var(--green)' : 'var(--red)';
 }
 
 document.addEventListener('keydown',e=>{

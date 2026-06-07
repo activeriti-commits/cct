@@ -230,15 +230,22 @@ function renderCapture(data) {
   document.getElementById('cap-pnl-pct').textContent = sgn(lastEntry.pct, 2) + '%  당일 수익률';
   document.getElementById('cap-pnl-pct').style.color = c;
 
-  // 자랑스러운 것만 — 총자산+원화 짝으로, 최악 제거
-  document.getElementById('cap-grid').innerHTML = [
-    { l: '현재 총자산',         v: '$' + last.asset.toFixed(2) },
-    { l: '원화 환산',           v: krwFmt(last.krw), sub: '현재 총자산 기준' },
+  // 2x3 그리드 — 짝수로 맞춰서 정렬 깔끔하게
+  const items = [
+    { l: '현재 총자산',         v: '$' + last.asset.toFixed(2), sub: krwFmt(last.krw) },
     { l: '총 수익률',           v: sgn(last.cumPct, 2) + '%'   },
-    { l: '총 수익 (USDT)',      v: sgn(last.cumPnl) + '$'      },
     { l: '역대 최고 하루 수익', v: '+$' + best.toFixed(2)      },
+    { l: '총 수익 (USDT)',      v: sgn(last.cumPnl) + '$'      },
     { l: '투자 기간',           v: days + ' Days'              },
-  ].map(it => `<div class="cap-card"><div class="cap-card-lbl">${it.l}</div><div class="cap-card-val">${it.v}</div>${it.sub ? `<div style="font-size:10px;color:rgba(255,255,255,.3);margin-top:3px">${it.sub}</div>` : ''}</div>`).join('');
+    { l: '초기 시드',           v: '$' + S.seed                },
+  ];
+  document.getElementById('cap-grid').innerHTML = items.map(it =>
+    `<div class="cap-card" style="min-height:72px">
+      <div class="cap-card-lbl">${it.l}</div>
+      <div class="cap-card-val">${it.v}</div>
+      ${it.sub ? `<div style="font-size:11px;color:rgba(255,255,255,.4);margin-top:3px">${it.sub}</div>` : ''}
+    </div>`
+  ).join('');
 }
 
 function renderSettingsForm() {
