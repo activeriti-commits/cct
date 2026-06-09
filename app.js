@@ -4,6 +4,7 @@ const DEFAULT_S = {
   title: 'My CCT',
   startDate: new Date().toISOString().slice(0,10),
   seed: 100, fx: 1400, goal: 10000, fxAuto: true,
+  currency: 'KRW/USD', domestic: 'bithumb', overseas: 'binance',
 };
 
 let S = {...DEFAULT_S}, E = [], currentUser = null, lineChart = null;
@@ -32,12 +33,19 @@ async function doLogout() {
 // ── 환율 / 시세 자동 연동 ────────────────────
 async function fetchFx() {
   try {
-    // 빗썸 USDT/KRW 실시간
-    const res = await fetch('https://api.bithumb.com/public/ticker/USDT_KRW');
-    if (res.ok) {
-      const data = await res.json();
-      if (data.status === '0000') {
-        S.fx = Math.round(parseFloat(data.data.closing_price));
+    if (S.domestic === 'upbit') {
+      // 업비트 KRW-USDT
+      const res = await fetch('https://api.upbit.com/v1/ticker?markets=KRW-USDT');
+      if (res.ok) {
+        const data = await res.json();
+        S.fx = Math.round(data[0].trade_price);
+      }
+    } else {
+      // 빗썸 USDT_KRW (기본)
+      const res = await fetch('https://api.bithumb.com/public/ticker/USDT_KRW');
+      if (res.ok) {
+        const data = await res.json();
+        if (data.status === '0000') S.fx = Math.round(parseFloat(data.data.closing_price));
       }
     }
   } catch(_) {}
@@ -47,13 +55,14 @@ async function fetchFx() {
 async function fetchMarketPrices() {
   const results = {};
   try {
-    // 바이낸스 BTC/USDT
-    const r1 = await fetch('https://api.binance.com/api/v3/ticker/price?symbol=BTCUSDT');
-    if (r1.ok) { const d = await r1.json(); results.btc = parseFloat(d.price); }
-  } catch(_) {}
-  try {
-    // 바이낸스 USDT 기준가 (=1, 참고용)
-    results.usdt = 1;
+    if (S.overseas === 'coinbase') {
+      const r = await fetch('https://api.coinbase.com/v2/prices/BTC-USD/spot');
+      if (r.ok) { const d = await r.json(); results.btc = parseFloat(d.data.amount); }
+    } else {
+      // 바이낸스 BTC/USDT (기본)
+      const r = await fetch('https://api.binance.com/api/v3/ticker/price?symbol=BTCUSDT');
+      if (r.ok) { const d = await r.json(); results.btc = parseFloat(d.price); }
+    }
   } catch(_) {}
   return results;
 }
@@ -276,6 +285,12 @@ function renderSettingsForm() {
   document.getElementById('s-start').value = S.startDate;
   document.getElementById('s-seed').value = S.seed;
   document.getElementById('s-goal').value = S.goal;
+  const cur = document.getElementById('s-currency');
+  const dom = document.getElementById('s-domestic');
+  const ov = document.getElementById('s-overseas');
+  if (cur) cur.value = S.currency;
+  if (dom) dom.value = S.domestic;
+  if (ov) ov.value = S.overseas;
 
   // 환율 토글
   const auto = S.fxAuto;
@@ -348,8 +363,13 @@ function saveSettings() {
   S.startDate = document.getElementById('s-start').value || S.startDate;
   S.seed = parseFloat(document.getElementById('s-seed').value) || S.seed;
   S.goal = parseFloat(document.getElementById('s-goal').value) || S.goal;
+  S.currency = document.getElementById('s-currency').value || S.currency;
+  S.domestic = document.getElementById('s-domestic').value || S.domestic;
+  S.overseas = document.getElementById('s-overseas').value || S.overseas;
   if (!S.fxAuto) {
     S.fx = parseInt(document.getElementById('s-fx').value) || S.fx;
+  } else {
+    fetchFx();
   }
   persist(); render(); showTab('dashboard');
   toast('설정이 저장됐어요');
