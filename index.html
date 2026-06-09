@@ -187,8 +187,22 @@ input:focus{border-color:var(--accent)}
   <!-- 대시보드 -->
   <div id="tab-dashboard">
     <div class="page-header">
-      <div class="page-title" id="dash-title">CCT</div>
-      <div class="page-sub" id="dash-sub"></div>
+      <div style="display:flex;justify-content:space-between;align-items:flex-start">
+        <div>
+          <div class="page-title" id="dash-title">CCT</div>
+          <div class="page-sub" id="dash-sub"></div>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center;flex-shrink:0;margin-top:4px">
+          <div style="background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:6px 12px;font-size:12px;display:flex;align-items:center;gap:6px">
+            <span style="color:var(--text3)">BTC</span>
+            <span id="btc-price" style="color:var(--text);font-weight:500">-</span>
+          </div>
+          <div style="background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:6px 12px;font-size:12px;display:flex;align-items:center;gap:6px">
+            <span style="color:var(--text3)">USDT</span>
+            <span id="usdt-krw" style="color:var(--text);font-weight:500">-</span>
+          </div>
+        </div>
+      </div>
     </div>
     <div class="g2" id="r1"></div>
     <div class="g2" id="r2"></div>
@@ -271,9 +285,29 @@ input:focus{border-color:var(--accent)}
       <div class="s-row"><div class="s-lbl">투자 시작일</div><input type="date" id="s-start" class="s-inp"></div>
       <div class="s-row"><div class="s-lbl">초기 시드 (USDT)</div><input type="number" id="s-seed" step="0.01" class="s-inp"></div>
       <div class="s-row">
+        <div style="display:flex;align-items:center;gap:10px">
+          <img src="https://static.bithumb.com/images/favicon/favicon-32x32.png" width="18" height="18" style="border-radius:4px" onerror="this.style.display='none'">
+          <div>
+            <div class="s-lbl">국내거래소</div>
+            <div class="s-sub">빗썸 USDT/KRW 실시간</div>
+          </div>
+        </div>
+        <div style="font-size:13px;color:var(--text2)">빗썸</div>
+      </div>
+      <div class="s-row">
+        <div style="display:flex;align-items:center;gap:10px">
+          <img src="https://bin.bnbstatic.com/static/images/common/favicon.ico" width="18" height="18" style="border-radius:4px" onerror="this.style.display='none'">
+          <div>
+            <div class="s-lbl">해외거래소</div>
+            <div class="s-sub">바이낸스 BTC/USDT 시세</div>
+          </div>
+        </div>
+        <div style="font-size:13px;color:var(--text2)">바이낸스</div>
+      </div>
+      <div class="s-row">
         <div>
           <div class="s-lbl">USDT 기준 환율</div>
-          <div class="s-sub" id="fx-sub">바이낸스 실시간 자동 연동</div>
+          <div class="s-sub" id="fx-sub">빗썸 실시간 자동 연동</div>
         </div>
         <div style="display:flex;align-items:center;gap:8px">
           <span id="fx-toggle-lbl" style="font-size:13px;color:var(--text2)">자동</span>

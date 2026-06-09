@@ -29,18 +29,33 @@ async function doLogout() {
   location.href = './auth.html';
 }
 
-// ── 환율 자동 연동 ───────────────────────────
+// ── 환율 / 시세 자동 연동 ────────────────────
 async function fetchFx() {
   try {
-    const res = await fetch('https://api.binance.com/api/v3/ticker/price?symbol=USDTKRW');
+    // 빗썸 USDT/KRW 실시간
+    const res = await fetch('https://api.bithumb.com/public/ticker/USDT_KRW');
     if (res.ok) {
       const data = await res.json();
-      S.fx = Math.round(parseFloat(data.price));
+      if (data.status === '0000') {
+        S.fx = Math.round(parseFloat(data.data.closing_price));
+      }
     }
-  } catch(_) {
-    // 실패 시 기존 환율 유지
-  }
+  } catch(_) {}
   render();
+}
+
+async function fetchMarketPrices() {
+  const results = {};
+  try {
+    // 바이낸스 BTC/USDT
+    const r1 = await fetch('https://api.binance.com/api/v3/ticker/price?symbol=BTCUSDT');
+    if (r1.ok) { const d = await r1.json(); results.btc = parseFloat(d.price); }
+  } catch(_) {}
+  try {
+    // 바이낸스 USDT 기준가 (=1, 참고용)
+    results.usdt = 1;
+  } catch(_) {}
+  return results;
 }
 
 async function toggleFxAuto() {
@@ -63,6 +78,12 @@ async function loadFromDB() {
   if (ed) E = ed.map(r => ({ date: r.date, asset: +r.asset, memo: r.memo || '' }));
   if (S.fxAuto) await fetchFx();
   else render();
+  fetchMarketPrices().then(prices => {
+    if (prices.btc) {
+      const el = document.getElementById('btc-price');
+      if (el) el.textContent = '$' + Math.round(prices.btc).toLocaleString();
+    }
+  });
 }
 
 async function persist() {
@@ -121,6 +142,8 @@ function render() {
 
   document.getElementById('dash-title').textContent = S.title;
   document.getElementById('dash-sub').textContent = `시작일 ${S.startDate} · 초기 시드 $${S.seed.toLocaleString()}`;
+  const usdt = document.getElementById('usdt-krw');
+  if (usdt) usdt.textContent = '₩' + S.fx.toLocaleString();
 
   document.getElementById('r1').innerHTML =
     M('총 수익 (USDT)', sgn(last.cumPnl), last.cumPnl >= 0 ? 'pos' : 'neg') +
