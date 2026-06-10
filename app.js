@@ -310,7 +310,7 @@ function renderSettingsForm() {
 }
 
 // ── 탭 ───────────────────────────────────────
-const TABS = ['dashboard','log','monthly','capture','settings'];
+const TABS = ['dashboard','log','monthly','capture','calc','settings'];
 function showTab(name) {
   TABS.forEach((t, i) => {
     document.getElementById('tab-'+t).classList.toggle('hidden', t !== name);
@@ -319,6 +319,51 @@ function showTab(name) {
     if (sideItems[i]) sideItems[i].classList.toggle('on', t === name);
     if (bottomItems[i]) bottomItems[i].classList.toggle('on', t === name);
   });
+  if (name === 'calc') refreshCalcPrices();
+}
+
+
+// ── 환산 계산기 ───────────────────────────────
+let calcBtcPrice = 0;
+
+async function refreshCalcPrices() {
+  const prices = await fetchMarketPrices();
+  if (prices.btc) calcBtcPrice = prices.btc;
+  const inp = document.getElementById('calc-input');
+  if (inp && inp.value) calcConvert(inp.value);
+  const rateEl = document.getElementById('calc-rate');
+  const btcEl = document.getElementById('calc-btc-price');
+  const btcLbl = document.getElementById('calc-btc-price-lbl');
+  if (rateEl) rateEl.textContent = S.fx.toLocaleString();
+  if (btcEl) btcEl.textContent = Math.round(calcBtcPrice).toLocaleString();
+  if (btcLbl) btcLbl.textContent = '$' + Math.round(calcBtcPrice).toLocaleString();
+}
+
+function calcConvert(val) {
+  const usdt = parseFloat(val) || 0;
+  const krwVal = usdt * S.fx;
+  const usdVal = usdt; // USDT ≈ USD
+  const btcVal = calcBtcPrice > 0 ? usdt / calcBtcPrice : 0;
+  const satsVal = btcVal * 100000000;
+
+  const set = (id, txt) => { const el = document.getElementById(id); if(el) el.textContent = txt; };
+
+  set('calc-krw', usdt > 0 ? '₩' + Math.round(krwVal).toLocaleString() : '-');
+  set('calc-usd', usdt > 0 ? '$' + usdVal.toFixed(2) : '-');
+  set('calc-btc', usdt > 0 && btcVal > 0 ? btcVal.toFixed(8) : '-');
+  set('calc-sats', usdt > 0 && satsVal > 0 ? Math.round(satsVal).toLocaleString() : '-');
+  set('calc-btc-krw-sub', `1USDT = ₩${S.fx.toLocaleString()}`);
+  set('calc-btc-usd-sub', `1USDT ≈ $1.00`);
+  set('calc-rate', S.fx.toLocaleString());
+  set('calc-btc-price', Math.round(calcBtcPrice).toLocaleString());
+  set('calc-btc-price-lbl', '$' + Math.round(calcBtcPrice).toLocaleString());
+}
+
+function copyCalc(id) {
+  const el = document.getElementById(id);
+  if (!el || el.textContent === '-') return;
+  const txt = el.textContent.replace(/[₩$,]/g, '').trim();
+  navigator.clipboard.writeText(txt).then(() => toast('복사됐어요'));
 }
 
 // ── CRUD ─────────────────────────────────────
