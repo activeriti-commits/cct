@@ -319,44 +319,103 @@ function showTab(name) {
     if (sideItems[i]) sideItems[i].classList.toggle('on', t === name);
     if (bottomItems[i]) bottomItems[i].classList.toggle('on', t === name);
   });
-  if (name === 'calc') refreshCalcPrices();
+  if (name === 'calc') showCalcBar();
+  else { const bar = document.getElementById('calc-input-bar'); if(bar) bar.classList.remove('show'); }
 }
 
 
 // ── 환산 계산기 ───────────────────────────────
 let calcBtcPrice = 0;
+let calcUnit = 'USD'; // 현재 입력 단위
 
 async function refreshCalcPrices() {
   const prices = await fetchMarketPrices();
   if (prices.btc) calcBtcPrice = prices.btc;
-  const inp = document.getElementById('calc-input');
-  if (inp && inp.value) calcConvert(inp.value);
-  const rateEl = document.getElementById('calc-rate');
-  const btcEl = document.getElementById('calc-btc-price');
-  const btcLbl = document.getElementById('calc-btc-price-lbl');
-  if (rateEl) rateEl.textContent = S.fx.toLocaleString();
-  if (btcEl) btcEl.textContent = Math.round(calcBtcPrice).toLocaleString();
-  if (btcLbl) btcLbl.textContent = '$' + Math.round(calcBtcPrice).toLocaleString();
-}
-
-function calcConvert(val) {
-  const usdt = parseFloat(val) || 0;
-  const krwVal = usdt * S.fx;
-  const usdVal = usdt; // USDT ≈ USD
-  const btcVal = calcBtcPrice > 0 ? usdt / calcBtcPrice : 0;
-  const satsVal = btcVal * 100000000;
-
-  const set = (id, txt) => { const el = document.getElementById(id); if(el) el.textContent = txt; };
-
-  set('calc-krw', usdt > 0 ? '₩' + Math.round(krwVal).toLocaleString() : '-');
-  set('calc-usd', usdt > 0 ? '$' + usdVal.toFixed(2) : '-');
-  set('calc-btc', usdt > 0 && btcVal > 0 ? btcVal.toFixed(8) : '-');
-  set('calc-sats', usdt > 0 && satsVal > 0 ? Math.round(satsVal).toLocaleString() : '-');
-  set('calc-btc-krw-sub', `1USDT = ₩${S.fx.toLocaleString()}`);
-  set('calc-btc-usd-sub', `1USDT ≈ $1.00`);
+  const set = (id, txt) => { const el = document.getElementById(id); if (el) el.textContent = txt; };
   set('calc-rate', S.fx.toLocaleString());
   set('calc-btc-price', Math.round(calcBtcPrice).toLocaleString());
-  set('calc-btc-price-lbl', '$' + Math.round(calcBtcPrice).toLocaleString());
+  set('calc-krw-sub', `1BTC = ₩${Math.round(calcBtcPrice * S.fx).toLocaleString()} | 1$ = ₩${S.fx.toLocaleString()}`);
+  set('calc-usd-sub', `1BTC = $${Math.round(calcBtcPrice).toLocaleString()} | 1USDT = $1`);
+  const inp = document.getElementById('calc-input');
+  if (inp && inp.value) calcConvert(inp.value);
+}
+
+function toUSD(val, unit) {
+  // 입력값을 USD(≈USDT)로 변환
+  switch(unit) {
+    case 'BTC':  return val * calcBtcPrice;
+    case 'KRW':  return val / S.fx;
+    case 'Sats': return (val / 100000000) * calcBtcPrice;
+    case 'USD':
+    default:     return val;
+  }
+}
+
+function calcConvert(raw) {
+  const val = parseFloat(raw) || 0;
+  if (!val) { ['calc-btc','calc-sats','calc-krw','calc-usd'].forEach(id => {
+    const el = document.getElementById(id); if(el) el.textContent = '-';
+  }); return; }
+
+  const usd = toUSD(val, calcUnit);
+  const btc = calcBtcPrice > 0 ? usd / calcBtcPrice : 0;
+
+  const set = (id, txt) => { const el = document.getElementById(id); if (el) el.textContent = txt; };
+  set('calc-btc',  btc > 0 ? btc.toFixed(8) : '-');
+  set('calc-sats', btc > 0 ? Math.round(btc * 100000000).toLocaleString() : '-');
+  set('calc-krw',  '₩' + Math.round(usd * S.fx).toLocaleString());
+  set('calc-usd',  '$' + usd.toFixed(2));
+
+  // 입력 단위 행 하이라이트
+  ['btc','sats','krw','usd'].forEach(u => {
+    const row = document.getElementById('calc-row-' + u);
+    if (row) row.classList.toggle('active', u === calcUnit.toLowerCase());
+  });
+}
+
+function setUnit(unit) {
+  calcUnit = unit;
+  document.getElementById('unit-label').textContent = unit;
+  // 체크 표시 업데이트
+  document.querySelectorAll('.unit-option').forEach(el => {
+    const isActive = el.textContent.replace(' ✓','') === unit;
+    el.classList.toggle('active', isActive);
+    el.textContent = el.textContent.replace(' ✓','') + (isActive ? ' ✓' : '');
+  });
+  document.getElementById('unit-menu').style.display = 'none';
+  // 입력창 placeholder 업데이트
+  const inp = document.getElementById('calc-input');
+  if (inp) { inp.placeholder = '0.00'; inp.value = ''; inp.focus(); }
+  ['calc-btc','calc-sats','calc-krw','calc-usd'].forEach(id => {
+    const el = document.getElementById(id); if(el) el.textContent = '-';
+  });
+  ['btc','sats','krw','usd'].forEach(u => {
+    const row = document.getElementById('calc-row-' + u);
+    if (row) row.classList.remove('active');
+  });
+}
+
+function toggleUnitMenu() {
+  const m = document.getElementById('unit-menu');
+  m.style.display = m.style.display === 'none' ? 'block' : 'none';
+}
+
+function showCalcBar() {
+  const bar = document.getElementById('calc-input-bar');
+  if (bar) { bar.classList.add('show'); document.getElementById('calc-input').focus(); }
+  refreshCalcPrices();
+}
+
+function clearCalc() {
+  const inp = document.getElementById('calc-input');
+  if (inp) inp.value = '';
+  ['calc-btc','calc-sats','calc-krw','calc-usd'].forEach(id => {
+    const el = document.getElementById(id); if(el) el.textContent = '-';
+  });
+  ['btc','sats','krw','usd'].forEach(u => {
+    const row = document.getElementById('calc-row-' + u);
+    if (row) row.classList.remove('active');
+  });
 }
 
 function copyCalc(id) {
@@ -365,6 +424,15 @@ function copyCalc(id) {
   const txt = el.textContent.replace(/[₩$,]/g, '').trim();
   navigator.clipboard.writeText(txt).then(() => toast('복사됐어요'));
 }
+
+// 외부 클릭시 단위 메뉴 닫기
+document.addEventListener('click', e => {
+  const menu = document.getElementById('unit-menu');
+  const btn = document.getElementById('unit-btn');
+  if (menu && btn && !menu.contains(e.target) && !btn.contains(e.target)) {
+    menu.style.display = 'none';
+  }
+});
 
 // ── CRUD ─────────────────────────────────────
 function addEntry() {
