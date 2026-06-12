@@ -320,7 +320,6 @@ function showTab(name) {
     if (bottomItems[i]) bottomItems[i].classList.toggle('on', t === name);
   });
   if (name === 'calc') showCalcBar();
-  else { const bar = document.getElementById('calc-input-bar'); if(bar) bar.classList.remove('show'); }
 }
 
 
@@ -401,9 +400,9 @@ function toggleUnitMenu() {
 }
 
 function showCalcBar() {
-  const bar = document.getElementById('calc-input-bar');
-  if (bar) { bar.classList.add('show'); document.getElementById('calc-input').focus(); }
   refreshCalcPrices();
+  const inp = document.getElementById('calc-input');
+  if (inp) inp.focus();
 }
 
 function clearCalc() {
