@@ -381,7 +381,11 @@ input:focus{border-color:var(--accent)}
           </button>
           <div id="unit-menu" style="display:none;position:absolute;bottom:calc(100% + 6px);right:0;background:var(--bg2);border:1px solid var(--border);border-radius:10px;overflow:hidden;min-width:100px;box-shadow:0 8px 24px rgba(0,0,0,.4)">
             <div style="padding:6px 0;font-size:12px;color:var(--text3);text-align:center;border-bottom:1px solid var(--border);padding:8px">단위 설정</div>
-            ${['BTC','KRW','USD','Sats'].map(u => `<div onclick="setUnit('${u}')" style="padding:12px 16px;cursor:pointer;font-size:14px;color:var(--text);display:flex;justify-content:space-between;align-items:center" onmouseover="this.style.background='var(--bg3)'" onmouseout="this.style.background=''">${u} <span id="unit-check-${u}" style="color:var(--green);display:none">✓</span></div>`).join('')}
+            <div onclick="setUnit('BTC')"  class="unit-opt" id="uopt-BTC"  style="padding:12px 16px;cursor:pointer;font-size:14px;color:var(--text2);display:flex;justify-content:space-between">BTC  <span id="unit-check-BTC"  style="color:var(--green);display:none">✓</span></div>
+          <div onclick="setUnit('KRW')"  class="unit-opt" id="uopt-KRW"  style="padding:12px 16px;cursor:pointer;font-size:14px;color:var(--text2);display:flex;justify-content:space-between">KRW  <span id="unit-check-KRW"  style="color:var(--green);display:none">✓</span></div>
+          <div onclick="setUnit('USD')"  class="unit-opt" id="uopt-USD"  style="padding:12px 16px;cursor:pointer;font-size:14px;color:var(--green);display:flex;justify-content:space-between">USD  <span id="unit-check-USD"  style="color:var(--green);display:inline">✓</span></div>
+          <div onclick="setUnit('Sats')" class="unit-opt" id="uopt-Sats" style="padding:12px 16px;cursor:pointer;font-size:14px;color:var(--text2);display:flex;justify-content:space-between">Sats <span id="unit-check-Sats" style="color:var(--green);display:none">✓</span></div>
+          <div onclick="setUnit('USDT')" class="unit-opt" id="uopt-USDT" style="padding:12px 16px;cursor:pointer;font-size:14px;color:var(--text2);display:flex;justify-content:space-between">USDT <span id="unit-check-USDT" style="color:var(--green);display:none">✓</span></div>
           </div>
         </div>
         <!-- 프리미엄 -->
