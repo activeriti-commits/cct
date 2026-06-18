@@ -235,7 +235,7 @@ function renderMonthly(data) {
 
 function renderCapture(data) {
   if (!data.length) return;
-  const { best, last, days } = calcStats(data);
+  const { best, worst, last, days } = calcStats(data);
   const lastEntry = data[data.length-1];
   document.getElementById('cap-title').textContent = S.title;
   document.getElementById('cap-meta').textContent = `${days} Days · 시작일 ${S.startDate}`;
@@ -248,8 +248,9 @@ function renderCapture(data) {
     { l: '현재 총자산',         v: '$' + last.asset.toFixed(2) },
     { l: '원화 환산',           v: krwFmt(last.krw), sub: '현재 총자산 기준' },
     { l: '총 수익률',           v: sgn(last.cumPct, 2) + '%' },
-    { l: '총 수익 (USDT)',      v: sgn(last.cumPnl) + '$' },
+    { l: '총 수익 (USDT)',      v: (last.cumPnl >= 0 ? '+$' : '-$') + Math.abs(last.cumPnl).toFixed(2) },
     { l: '역대 최고 하루 수익', v: '+$' + best.toFixed(2) },
+    { l: '역대 최악 하루 손실', v: '-$' + Math.abs(worst).toFixed(2) },
     { l: '투자 기간',           v: days + ' Days' },
   ].map(it => `<div class="cap-card"><div class="cap-card-lbl">${it.l}</div><div class="cap-card-val">${it.v}</div>${it.sub ? `<div style="font-size:10px;color:rgba(255,255,255,.3);margin-top:3px">${it.sub}</div>` : ''}</div>`).join('');
 }
@@ -361,11 +362,25 @@ let calcUnit = 'USD';
 let _btcCacheAt = 0;
 
 async function refreshCalcPrices() {
-  // 60초 캐시: BTC 시세 + 환율 갱신
+  const s = (id, t) => { const el = document.getElementById(id); if(el) el.textContent = t; };
+
+  // 이미 가진 값 즉시 표시 (탭 열자마자 보이도록)
+  const showCurrent = () => {
+    s('calc-rate',        S.fx > 0 ? S.fx.toLocaleString() : '-');
+    s('calc-rate2',       S.fx > 0 ? S.fx.toLocaleString() : '-');
+    s('calc-btc-price',   calcBtcPrice > 0 ? Math.round(calcBtcPrice).toLocaleString() : '-');
+    s('calc-btc-krw-lbl', calcBtcPrice > 0 ? '₩' + Math.round(calcBtcPrice * S.fx).toLocaleString() : '-');
+    s('calc-btc-usd-lbl', calcBtcPrice > 0 ? Math.round(calcBtcPrice).toLocaleString() : '-');
+    s('calc-rate-bar',    calcBtcPrice > 0
+      ? `1BTC = $${Math.round(calcBtcPrice).toLocaleString()} · ₩${Math.round(calcBtcPrice * S.fx).toLocaleString()}`
+      : '시세 로딩 중...');
+  };
+  showCurrent();
+
+  // 60초 캐시: 신선한 데이터 fetch
   if (Date.now() - _btcCacheAt > 60000) {
     const p = await fetchMarketPrices();
     if (p.btc) calcBtcPrice = p.btc;
-    // 환율 갱신 (S.fx 업데이트, render 호출 없이)
     if (S.fxAuto) {
       try {
         if (S.domestic === 'upbit') {
@@ -378,14 +393,9 @@ async function refreshCalcPrices() {
       } catch(_) {}
     }
     _btcCacheAt = Date.now();
+    showCurrent();
   }
-  const s = (id, t) => { const el = document.getElementById(id); if(el) el.textContent = t; };
-  s('calc-rate',        S.fx.toLocaleString());
-  s('calc-btc-price',   Math.round(calcBtcPrice).toLocaleString());
-  s('calc-btc-krw-lbl', '₩' + Math.round(calcBtcPrice * S.fx).toLocaleString());
-  s('calc-rate2',       S.fx.toLocaleString());
-  s('calc-btc-usd-lbl', Math.round(calcBtcPrice).toLocaleString());
-  s('calc-rate-bar',    `1BTC = $${Math.round(calcBtcPrice).toLocaleString()} · ₩${Math.round(calcBtcPrice * S.fx).toLocaleString()}`);
+
   const inp = document.getElementById('calc-input');
   if (inp && inp.value) calcConvert(inp.value);
 }
@@ -411,9 +421,10 @@ function calcConvert(raw) {
   const premium = parseFloat(document.getElementById('calc-premium')?.value || 0) / 100;
   const usd = toUSD(val, calcUnit);
   const btc = calcBtcPrice > 0 ? usd / calcBtcPrice : 0;
-  s('calc-btc',  btc > 0 ? btc.toFixed(8) : '-');
-  s('calc-sats', btc > 0 ? Math.round(btc * 100000000).toLocaleString() : '-');
-  s('calc-krw',  btc > 0 ? '₩' + Math.round(usd * S.fx * (1 + premium)).toLocaleString() : '-');
+  const hasBtc = calcBtcPrice > 0;
+  s('calc-btc',  hasBtc ? btc.toFixed(8) : '-');
+  s('calc-sats', hasBtc ? Math.round(btc * 100000000).toLocaleString() : '-');
+  s('calc-krw',  '₩' + Math.round(usd * S.fx * (1 + premium)).toLocaleString());
   s('calc-usd',  '$' + usd.toFixed(2));
 }
 
