@@ -358,7 +358,7 @@ function resetAll() {
 }
 
 // ── 환산 계산기 ───────────────────────────────
-let calcUnit = 'BTC';
+let calcUnit = localStorage.getItem('calcUnit') || 'BTC';
 let _btcCacheAt = 0;
 
 async function refreshCalcPrices() {
@@ -427,7 +427,20 @@ function calcConvert(raw) {
 }
 
 function setUnit(unit) {
+  // 현재 입력값을 새 단위로 환산해서 유지
+  const inp = document.getElementById('calc-input');
+  const prevVal = parseFloat(inp?.value) || 0;
+  let newVal = '';
+  if (prevVal && calcBtcPrice > 0) {
+    const usd = toUSD(prevVal, calcUnit);
+    if (unit === 'BTC')       newVal = (usd / calcBtcPrice).toFixed(8);
+    else if (unit === 'Sats') newVal = Math.round(usd / calcBtcPrice * 100000000).toString();
+    else if (unit === 'KRW')  newVal = Math.round(usd * S.fx).toString();
+    else                      newVal = usd.toFixed(2);
+  }
+
   calcUnit = unit;
+  localStorage.setItem('calcUnit', unit);
   document.getElementById('unit-label').textContent = unit;
   document.querySelectorAll('.unit-option').forEach(el => {
     const u = el.textContent.replace(' ✓', '').trim();
@@ -440,9 +453,9 @@ function setUnit(unit) {
     const row = document.getElementById('calc-row-' + u);
     if (row) row.style.display = u === cur ? 'none' : '';
   });
-  const inp = document.getElementById('calc-input');
-  if (inp) { inp.value = ''; inp.focus(); }
-  ['calc-btc','calc-sats','calc-krw','calc-usd'].forEach(id => {
+  if (inp) { inp.value = newVal; inp.focus(); }
+  if (newVal) calcConvert(newVal);
+  else ['calc-btc','calc-sats','calc-krw','calc-usd'].forEach(id => {
     const el = document.getElementById(id); if(el) el.textContent = '-';
   });
 }
@@ -453,6 +466,14 @@ function toggleUnitMenu() {
 }
 
 function showCalcBar() {
+  // 저장된 단위 UI 동기화
+  const lbl = document.getElementById('unit-label');
+  if (lbl) lbl.textContent = calcUnit;
+  document.querySelectorAll('.unit-option').forEach(el => {
+    const u = el.textContent.replace(' ✓', '').trim();
+    el.classList.toggle('active', u === calcUnit);
+    el.textContent = u + (u === calcUnit ? ' ✓' : '');
+  });
   const cur = calcUnit.toLowerCase();
   ['btc','sats','krw','usd'].forEach(u => {
     const row = document.getElementById('calc-row-' + u);
