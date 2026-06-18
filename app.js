@@ -358,7 +358,7 @@ function resetAll() {
 }
 
 // ── 환산 계산기 ───────────────────────────────
-let calcUnit = 'USD';
+let calcUnit = 'BTC';
 let _btcCacheAt = 0;
 
 async function refreshCalcPrices() {
@@ -411,18 +411,18 @@ function toUSD(val, unit) {
 
 function calcConvert(raw) {
   const val = parseFloat(raw) || 0;
+  const cur = calcUnit.toLowerCase();
+  const hideRow = u => { const r = document.getElementById('calc-row-' + u); if (r) r.style.display = u === cur ? 'none' : ''; };
+  ['btc','sats','krw','usd'].forEach(hideRow);
   const s = (id, t) => { const el = document.getElementById(id); if(el) el.textContent = t; };
   if (!val) { ['calc-btc','calc-sats','calc-krw','calc-usd'].forEach(id => s(id, '-')); return; }
   const premium = parseFloat(document.getElementById('calc-premium')?.value || 0) / 100;
   const usd = toUSD(val, calcUnit);
   const btc = calcBtcPrice > 0 ? usd / calcBtcPrice : 0;
   const hasBtc = calcBtcPrice > 0;
-  s('calc-btc',  calcUnit === 'BTC'  ? val.toFixed(8)
-                 : hasBtc ? btc.toFixed(8) : '-');
-  s('calc-sats', calcUnit === 'Sats' ? Math.round(val).toLocaleString()
-                 : hasBtc ? Math.round(btc * 100000000).toLocaleString() : '-');
-  s('calc-krw',  calcUnit === 'KRW'  ? '₩' + Math.round(val).toLocaleString()
-                 : '₩' + Math.round(usd * S.fx * (1 + premium)).toLocaleString());
+  s('calc-btc',  hasBtc ? btc.toFixed(8) : '-');
+  s('calc-sats', hasBtc ? Math.round(btc * 100000000).toLocaleString() : '-');
+  s('calc-krw',  '₩' + Math.round(usd * S.fx * (1 + premium)).toLocaleString());
   s('calc-usd',  '$' + usd.toFixed(2));
 }
 
@@ -435,6 +435,11 @@ function setUnit(unit) {
     el.textContent = u + (u === unit ? ' ✓' : '');
   });
   document.getElementById('unit-menu').style.display = 'none';
+  const cur = unit.toLowerCase();
+  ['btc','sats','krw','usd'].forEach(u => {
+    const row = document.getElementById('calc-row-' + u);
+    if (row) row.style.display = u === cur ? 'none' : '';
+  });
   const inp = document.getElementById('calc-input');
   if (inp) { inp.value = ''; inp.focus(); }
   ['calc-btc','calc-sats','calc-krw','calc-usd'].forEach(id => {
@@ -448,6 +453,11 @@ function toggleUnitMenu() {
 }
 
 function showCalcBar() {
+  const cur = calcUnit.toLowerCase();
+  ['btc','sats','krw','usd'].forEach(u => {
+    const row = document.getElementById('calc-row-' + u);
+    if (row) row.style.display = u === cur ? 'none' : '';
+  });
   refreshCalcPrices();
   const inp = document.getElementById('calc-input');
   if (inp) inp.focus();
