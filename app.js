@@ -358,34 +358,34 @@ function resetAll() {
 
 // ── 환산 계산기 ───────────────────────────────
 let calcUnit = 'USD';
-let calcBtcKrw = 0;
-let _calcCache = null, _calcCacheAt = 0;
-
-async function fetchCalcPrices() {
-  if (_calcCache && Date.now() - _calcCacheAt < 60000) return _calcCache;
-  try {
-    const res = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd,krw');
-    if (res.ok) {
-      const d = await res.json();
-      _calcCache = { btcUsd: d.bitcoin.usd, btcKrw: d.bitcoin.krw };
-      _calcCacheAt = Date.now();
-      return _calcCache;
-    }
-  } catch(_) {}
-  return calcBtcPrice > 0 ? { btcUsd: calcBtcPrice, btcKrw: calcBtcPrice * S.fx } : null;
-}
+let _btcCacheAt = 0;
 
 async function refreshCalcPrices() {
-  const p = await fetchCalcPrices();
-  if (p) { calcBtcPrice = p.btcUsd; calcBtcKrw = p.btcKrw; }
+  // 60초 캐시: BTC 시세 + 환율 갱신
+  if (Date.now() - _btcCacheAt > 60000) {
+    const p = await fetchMarketPrices();
+    if (p.btc) calcBtcPrice = p.btc;
+    // 환율 갱신 (S.fx 업데이트, render 호출 없이)
+    if (S.fxAuto) {
+      try {
+        if (S.domestic === 'upbit') {
+          const res = await fetch('https://api.upbit.com/v1/ticker?markets=KRW-USDT');
+          if (res.ok) { const d = await res.json(); S.fx = Math.round(d[0].trade_price); }
+        } else {
+          const res = await fetch('https://api.bithumb.com/public/ticker/USDT_KRW');
+          if (res.ok) { const d = await res.json(); if (d.status==='0000') S.fx = Math.round(parseFloat(d.data.closing_price)); }
+        }
+      } catch(_) {}
+    }
+    _btcCacheAt = Date.now();
+  }
   const s = (id, t) => { const el = document.getElementById(id); if(el) el.textContent = t; };
-  const fx = calcBtcKrw && calcBtcPrice ? Math.round(calcBtcKrw / calcBtcPrice) : S.fx;
-  s('calc-rate',        fx.toLocaleString());
+  s('calc-rate',        S.fx.toLocaleString());
   s('calc-btc-price',   Math.round(calcBtcPrice).toLocaleString());
-  s('calc-btc-krw-lbl', '₩' + Math.round(calcBtcKrw).toLocaleString());
-  s('calc-rate2',       fx.toLocaleString());
+  s('calc-btc-krw-lbl', '₩' + Math.round(calcBtcPrice * S.fx).toLocaleString());
+  s('calc-rate2',       S.fx.toLocaleString());
   s('calc-btc-usd-lbl', Math.round(calcBtcPrice).toLocaleString());
-  s('calc-rate-bar',    `1BTC = $${Math.round(calcBtcPrice).toLocaleString()} · ₩${Math.round(calcBtcKrw).toLocaleString()}`);
+  s('calc-rate-bar',    `1BTC = $${Math.round(calcBtcPrice).toLocaleString()} · ₩${Math.round(calcBtcPrice * S.fx).toLocaleString()}`);
   const inp = document.getElementById('calc-input');
   if (inp && inp.value) calcConvert(inp.value);
 }
@@ -393,7 +393,7 @@ async function refreshCalcPrices() {
 function toUSD(val, unit) {
   switch(unit) {
     case 'BTC':  return val * calcBtcPrice;
-    case 'KRW':  return calcBtcKrw > 0 ? val * calcBtcPrice / calcBtcKrw : val / S.fx;
+    case 'KRW':  return val / S.fx;
     case 'Sats': return (val / 100000000) * calcBtcPrice;
     default:     return val;
   }
@@ -411,10 +411,9 @@ function calcConvert(raw) {
   const premium = parseFloat(document.getElementById('calc-premium')?.value || 0) / 100;
   const usd = toUSD(val, calcUnit);
   const btc = calcBtcPrice > 0 ? usd / calcBtcPrice : 0;
-  const fx  = calcBtcKrw && calcBtcPrice ? calcBtcKrw / calcBtcPrice : S.fx;
   s('calc-btc',  btc > 0 ? btc.toFixed(8) : '-');
   s('calc-sats', btc > 0 ? Math.round(btc * 100000000).toLocaleString() : '-');
-  s('calc-krw',  btc > 0 ? '₩' + Math.round(usd * fx * (1 + premium)).toLocaleString() : '-');
+  s('calc-krw',  btc > 0 ? '₩' + Math.round(usd * S.fx * (1 + premium)).toLocaleString() : '-');
   s('calc-usd',  '$' + usd.toFixed(2));
 }
 
