@@ -308,98 +308,99 @@ input:focus{border-color:var(--accent)}
   </div>
 
   <!-- 환산 계산기 -->
-  <div id="tab-calc" class="hidden" style="position:relative;min-height:calc(100vh - 120px)">
-    <!-- 결과 영역 (스크롤) -->
-    <div style="padding-bottom:140px">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.25rem">
-        <div style="font-size:11px;color:var(--text3)">
-          환율 ₩<span id="calc-rate">-</span> · BTC $<span id="calc-btc-price">-</span>
-        </div>
+  <div id="tab-calc" class="hidden">
+    <div style="padding-bottom:160px">
+      <!-- 헤더 -->
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.5rem">
+        <div style="font-size:11px;color:var(--text3)">BTC $<span id="calc-btc-price">-</span> · ₩<span id="calc-rate">-</span></div>
         <span onclick="refreshCalcPrices()" style="font-size:12px;color:var(--accent);cursor:pointer">↻ 새로고침</span>
       </div>
-      <!-- 결과 행들 -->
-      <div style="display:flex;flex-direction:column;gap:2px" id="calc-results">
-        <!-- BTC -->
-        <div style="display:flex;justify-content:space-between;align-items:center;padding:18px 4px;border-bottom:1px solid var(--border)">
-          <div>
-            <div style="font-size:14px;font-weight:500;color:var(--text2)">BTC(₿)</div>
-            <div style="font-size:11px;color:var(--text3);margin-top:3px">1BTC = 1BTC</div>
-          </div>
+
+      <!-- BTC -->
+      <div id="calc-row-btc" style="padding:18px 0;border-bottom:1px solid var(--border)">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <div style="font-size:15px;font-weight:600;color:var(--text)">BTC(₿)</div>
           <div style="display:flex;align-items:center;gap:10px">
-            <div style="font-size:24px;font-weight:600;color:var(--text);text-align:right" id="calc-btc">-</div>
-            <button onclick="copyCalc('calc-btc')" style="background:none;border:1px solid var(--border);border-radius:6px;padding:5px 8px;cursor:pointer;color:var(--text3);font-size:12px;flex-shrink:0">⎘</button>
+            <div style="font-size:26px;font-weight:600;color:var(--text)" id="calc-btc">-</div>
+            <button onclick="copyCalc('calc-btc')" style="background:none;border:1px solid var(--border);border-radius:6px;padding:5px 9px;cursor:pointer;color:var(--text3);font-size:13px;flex-shrink:0">⎘</button>
           </div>
         </div>
-        <!-- Sats -->
-        <div style="display:flex;justify-content:space-between;align-items:center;padding:18px 4px;border-bottom:1px solid var(--border)">
-          <div>
-            <div style="font-size:14px;font-weight:500;color:var(--text2)">Sats</div>
-            <div style="font-size:11px;color:var(--text3);margin-top:3px">1BTC = 100,000,000 Sats</div>
-          </div>
+        <div style="font-size:11px;color:var(--text3);margin-top:5px">* 1BTC = 1BTC</div>
+      </div>
+
+      <!-- Sats -->
+      <div id="calc-row-sats" style="padding:18px 0;border-bottom:1px solid var(--border)">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <div style="font-size:15px;font-weight:600;color:var(--text)">Sats</div>
           <div style="display:flex;align-items:center;gap:10px">
-            <div style="font-size:24px;font-weight:600;color:var(--text);text-align:right" id="calc-sats">-</div>
-            <button onclick="copyCalc('calc-sats')" style="background:none;border:1px solid var(--border);border-radius:6px;padding:5px 8px;cursor:pointer;color:var(--text3);font-size:12px;flex-shrink:0">⎘</button>
+            <div style="font-size:26px;font-weight:600;color:var(--text)" id="calc-sats">-</div>
+            <button onclick="copyCalc('calc-sats')" style="background:none;border:1px solid var(--border);border-radius:6px;padding:5px 9px;cursor:pointer;color:var(--text3);font-size:13px;flex-shrink:0">⎘</button>
           </div>
         </div>
-        <!-- KRW -->
-        <div style="display:flex;justify-content:space-between;align-items:center;padding:18px 4px;border-bottom:1px solid var(--border)">
-          <div>
-            <div style="font-size:14px;font-weight:500;color:var(--text2)">KRW(₩)</div>
-            <div style="font-size:11px;color:var(--text3);margin-top:3px">1BTC = <span id="calc-btc-krw-lbl">-</span> | 1$ = ₩<span id="calc-rate2">-</span></div>
-          </div>
+        <div style="font-size:11px;color:var(--text3);margin-top:5px">* 1BTC = 100,000,000 Sats</div>
+      </div>
+
+      <!-- KRW -->
+      <div id="calc-row-krw" style="padding:18px 0;border-bottom:1px solid var(--border)">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <div style="font-size:15px;font-weight:600;color:var(--text)">KRW(₩)</div>
           <div style="display:flex;align-items:center;gap:10px">
-            <div style="font-size:24px;font-weight:600;color:var(--text);text-align:right" id="calc-krw">-</div>
-            <button onclick="copyCalc('calc-krw')" style="background:none;border:1px solid var(--border);border-radius:6px;padding:5px 8px;cursor:pointer;color:var(--text3);font-size:12px;flex-shrink:0">⎘</button>
+            <div style="font-size:26px;font-weight:600;color:var(--text)" id="calc-krw">-</div>
+            <button onclick="copyCalc('calc-krw')" style="background:none;border:1px solid var(--border);border-radius:6px;padding:5px 9px;cursor:pointer;color:var(--text3);font-size:13px;flex-shrink:0">⎘</button>
           </div>
         </div>
-        <!-- USD -->
-        <div style="display:flex;justify-content:space-between;align-items:center;padding:18px 4px">
-          <div>
-            <div style="font-size:14px;font-weight:500;color:var(--text2)">USD($)</div>
-            <div style="font-size:11px;color:var(--text3);margin-top:3px">1BTC = $<span id="calc-btc-usd-lbl">-</span> | 1USDT : $<span id="calc-rate3">-</span></div>
-          </div>
+        <div style="font-size:11px;color:var(--text3);margin-top:5px">* 1BTC = <span id="calc-btc-krw-lbl">-</span> | 1$ = ₩<span id="calc-rate2">-</span></div>
+      </div>
+
+      <!-- USD -->
+      <div id="calc-row-usd" style="padding:18px 0">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <div style="font-size:15px;font-weight:600;color:var(--text)">USD($)</div>
           <div style="display:flex;align-items:center;gap:10px">
-            <div style="font-size:24px;font-weight:600;color:var(--text);text-align:right" id="calc-usd">-</div>
-            <button onclick="copyCalc('calc-usd')" style="background:none;border:1px solid var(--border);border-radius:6px;padding:5px 8px;cursor:pointer;color:var(--text3);font-size:12px;flex-shrink:0">⎘</button>
+            <div style="font-size:26px;font-weight:600;color:var(--text)" id="calc-usd">-</div>
+            <button onclick="copyCalc('calc-usd')" style="background:none;border:1px solid var(--border);border-radius:6px;padding:5px 9px;cursor:pointer;color:var(--text3);font-size:13px;flex-shrink:0">⎘</button>
           </div>
         </div>
+        <div style="font-size:11px;color:var(--text3);margin-top:5px">* 1BTC = $<span id="calc-btc-usd-lbl">-</span></div>
       </div>
     </div>
 
-    <!-- 입력창 하단 고정 -->
-    <div style="position:fixed;bottom:var(--bottom-bar, 0);left:var(--sidebar,0);right:0;background:var(--bg2);border-top:1px solid var(--border);padding:12px 1.5rem;z-index:50">
-      <div style="max-width:960px;margin:0 auto;display:flex;align-items:center;gap:10px">
-        <button onclick="clearCalc()" style="background:none;border:none;color:var(--text3);font-size:20px;cursor:pointer;padding:0 4px;line-height:1">✕</button>
+    <!-- 하단 고정 입력창 -->
+    <div style="position:fixed;bottom:var(--bottom-bar,0);left:var(--sidebar,0);right:0;background:var(--bg2);border-top:1px solid var(--border);z-index:50">
+      <!-- 1행: 입력 + 단위 -->
+      <div style="display:flex;align-items:center;gap:10px;padding:12px 1.5rem 6px">
+        <button onclick="clearCalc()" style="background:none;border:none;color:var(--text3);font-size:20px;cursor:pointer;padding:0 4px;line-height:1;flex-shrink:0">✕</button>
         <input type="number" id="calc-input" placeholder="금액 입력" step="any"
           oninput="calcConvert(this.value)"
-          style="flex:1;font-size:20px;padding:10px 14px;border-radius:8px;border:1px solid var(--border);background:var(--bg3);color:var(--text);outline:none;font-family:var(--font)">
-        <!-- 단위 선택 -->
-        <div style="position:relative">
-          <button onclick="toggleUnitMenu()" id="unit-btn" style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:10px 14px;color:var(--text);font-size:14px;font-weight:500;cursor:pointer;font-family:var(--font);display:flex;align-items:center;gap:4px">
+          style="flex:1;font-size:20px;padding:8px 12px;border-radius:8px;border:1px solid var(--border);background:var(--bg3);color:var(--text);outline:none;font-family:var(--font)">
+        <div style="position:relative;flex-shrink:0">
+          <button onclick="toggleUnitMenu()" id="unit-btn"
+            style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:9px 14px;color:var(--text);font-size:14px;font-weight:500;cursor:pointer;font-family:var(--font);display:flex;align-items:center;gap:4px">
             <span id="unit-label">USD</span>
             <span style="font-size:10px;color:var(--text3)">▾</span>
           </button>
-          <div id="unit-menu" style="display:none;position:absolute;bottom:calc(100% + 6px);right:0;background:var(--bg2);border:1px solid var(--border);border-radius:10px;overflow:hidden;min-width:100px;box-shadow:0 8px 24px rgba(0,0,0,.4)">
-            <div style="font-size:12px;color:var(--text3);text-align:center;border-bottom:1px solid var(--border);padding:8px">단위 설정</div>
+          <div id="unit-menu" style="display:none;position:absolute;bottom:calc(100% + 6px);right:0;background:var(--bg2);border:1px solid var(--border);border-radius:10px;overflow:hidden;min-width:110px;box-shadow:0 8px 24px rgba(0,0,0,.4)">
+            <div style="font-size:11px;color:var(--text3);text-align:center;border-bottom:1px solid var(--border);padding:8px;letter-spacing:.06em">단위 설정</div>
             <div class="unit-option" onclick="setUnit('BTC')">BTC</div>
             <div class="unit-option" onclick="setUnit('KRW')">KRW</div>
             <div class="unit-option active" onclick="setUnit('USD')">USD ✓</div>
             <div class="unit-option" onclick="setUnit('Sats')">Sats</div>
           </div>
         </div>
-        <!-- 프리미엄 -->
-        <div style="display:flex;flex-direction:column;align-items:center;gap:2px">
-          <div style="font-size:10px;color:var(--text3)">Premium</div>
-          <div style="display:flex;align-items:center;gap:4px">
-            <span style="font-size:11px;color:var(--text3)">P(%):</span>
-            <input type="number" id="calc-premium" value="0" step="0.1"
-              oninput="calcConvert(document.getElementById('calc-input').value)"
-              style="width:50px;padding:4px 6px;font-size:12px;border-radius:6px;border:1px solid var(--border);background:var(--bg3);color:var(--text);text-align:center">
-            <button onclick="adjPremium(-0.5)" style="background:var(--bg3);border:1px solid var(--border);border-radius:4px;width:22px;height:22px;cursor:pointer;color:var(--text2);font-size:12px">-</button>
-            <button onclick="adjPremium(0.5)" style="background:var(--bg3);border:1px solid var(--border);border-radius:4px;width:22px;height:22px;cursor:pointer;color:var(--text2);font-size:12px">+</button>
-          </div>
-        </div>
       </div>
+      <!-- 2행: 프리미엄 -->
+      <div style="display:flex;align-items:center;gap:8px;padding:0 1.5rem 8px">
+        <span style="font-size:12px;color:var(--text2);font-weight:500">Premium</span>
+        <span title="국내 거래소 프리미엄 %" style="font-size:12px;color:var(--text3);cursor:default">ⓘ</span>
+        <span style="font-size:12px;color:var(--text3)">P(%):</span>
+        <input type="number" id="calc-premium" value="0" step="0.1"
+          oninput="calcConvert(document.getElementById('calc-input').value)"
+          style="width:54px;padding:4px 8px;font-size:13px;border-radius:6px;border:1px solid var(--border);background:var(--bg3);color:var(--text);text-align:center;font-family:var(--font)">
+        <button onclick="adjPremium(-0.5)" style="background:var(--bg3);border:1px solid var(--border);border-radius:5px;width:26px;height:26px;cursor:pointer;color:var(--text2);font-size:16px;line-height:1">−</button>
+        <button onclick="adjPremium(0.5)"  style="background:var(--bg3);border:1px solid var(--border);border-radius:5px;width:26px;height:26px;cursor:pointer;color:var(--text2);font-size:16px;line-height:1">+</button>
+      </div>
+      <!-- 3행: 현재 시세 요약 -->
+      <div style="text-align:center;padding:0 1.5rem 8px;font-size:11px;color:var(--text3)" id="calc-rate-bar">-</div>
     </div>
   </div>
 
