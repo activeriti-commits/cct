@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ko">
+<html lang="ko" data-theme="light">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -9,12 +9,15 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="CCT">
+<script>(function(){const t=localStorage.getItem('theme')||'system';const dark=t==='dark'||(t==='system'&&window.matchMedia('(prefers-color-scheme: dark)').matches);document.documentElement.dataset.theme=dark?'dark':'light';})()</script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
 <style>
 :root{--bg:#0f1117;--bg2:#161b27;--bg3:#1e2535;--border:rgba(255,255,255,0.07);--text:#e8eaf0;--text2:#8892a4;--text3:#4d5566;--green:#00c48c;--green-dim:rgba(0,196,140,0.12);--red:#ff4d6a;--red-dim:rgba(255,77,106,0.12);--accent:#3d7eff;--r:10px;--font:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;--sidebar:0px;--top-bar:52px;--bottom-bar:60px}
+[data-theme="light"]{--bg:#f4f6f8;--bg2:#ffffff;--bg3:#eef0f4;--border:rgba(0,0,0,0.08);--text:#1a1d27;--text2:#5a6478;--text3:#9099aa;--green:#00a878;--green-dim:rgba(0,168,120,0.12);--red:#e63553;--red-dim:rgba(230,53,83,0.12)}
+[data-theme="dark"]{--bg:#0f1117;--bg2:#161b27;--bg3:#1e2535;--border:rgba(255,255,255,0.07);--text:#e8eaf0;--text2:#8892a4;--text3:#4d5566;--green:#00c48c;--green-dim:rgba(0,196,140,0.12);--red:#ff4d6a;--red-dim:rgba(255,77,106,0.12)}
 *{box-sizing:border-box;margin:0;padding:0}
 body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:100vh}
 
@@ -485,8 +488,8 @@ input:focus{border-color:var(--accent)}
         <div class="util-link-left"><span class="util-link-icon">📚</span><div><div class="util-link-lbl">Bitcoin Resources</div><div class="util-link-sub">Jameson Lopp 큐레이션</div></div></div>
         <span class="util-arrow">›</span>
       </div>
-      <div class="util-link" onclick="window.open('https://www.youtube.com/@kkulyanggang','_blank')">
-        <div class="util-link-left"><span class="util-link-icon">🍬</span><div><div class="util-link-lbl">꿀양갱갱갱</div><div class="util-link-sub">CCT 제작 영감 · YouTube</div></div></div>
+      <div class="util-link" onclick="showBIP39()">
+        <div class="util-link-left"><span class="util-link-icon">🔑</span><div><div class="util-link-lbl">BIP39 Word List</div><div class="util-link-sub">니모닉 단어 목록 2048개 & 검색</div></div></div>
         <span class="util-arrow">›</span>
       </div>
     </div>
@@ -523,6 +526,17 @@ input:focus{border-color:var(--accent)}
     <div class="s-section-title">가격 설정</div>
     <div class="card" style="margin-bottom:1rem">
       <div class="s-row">
+        <div>
+          <div class="s-lbl">통화 단위</div>
+          <div class="s-sub">수익/자산 표시 기준</div>
+        </div>
+        <select id="s-currency" class="s-inp" onchange="saveSettings()">
+          <option value="KRW/USD">KRW + USD</option>
+          <option value="USD">USD만</option>
+          <option value="KRW">KRW만</option>
+        </select>
+      </div>
+      <div class="s-row">
         <div class="s-lbl">국내거래소</div>
         <select id="s-domestic" class="s-inp" onchange="saveSettings()">
           <option value="upbit">업비트</option>
@@ -552,22 +566,19 @@ input:focus{border-color:var(--accent)}
         <div class="s-lbl">환율 직접 입력 (KRW)</div>
         <input type="number" id="s-fx" step="1" class="s-inp">
       </div>
-      <div class="s-row">
-        <div>
-          <div class="s-lbl">통화 단위</div>
-          <div class="s-sub">수익/자산 표시 기준</div>
-        </div>
-        <select id="s-currency" class="s-inp" onchange="saveSettings()">
-          <option value="KRW/USD">KRW + USD</option>
-          <option value="USD">USD만</option>
-          <option value="KRW">KRW만</option>
-        </select>
-      </div>
     </div>
 
     <!-- 스타일 및 화면 -->
     <div class="s-section-title">스타일 및 화면</div>
     <div class="card" style="margin-bottom:1rem">
+      <div class="s-row">
+        <div class="s-lbl">화면 모드</div>
+        <select id="s-theme" class="s-inp" onchange="saveTheme(this.value)">
+          <option value="light">라이트</option>
+          <option value="dark">다크</option>
+          <option value="system">시스템</option>
+        </select>
+      </div>
       <div class="s-row">
         <div>
           <div class="s-lbl">시작 페이지</div>
@@ -575,7 +586,6 @@ input:focus{border-color:var(--accent)}
         </div>
         <select id="s-startpage" class="s-inp" onchange="saveSettings()">
           <option value="dashboard">대시보드</option>
-          <option value="capture">캡처</option>
           <option value="calc">계산기</option>
           <option value="log">기록</option>
           <option value="monthly">결산</option>
@@ -610,8 +620,8 @@ input:focus{border-color:var(--accent)}
         </div>
         <div id="acc-support" style="display:none" class="acc-body">
           <div style="text-align:center;padding:8px 0 12px">
-            <canvas id="qr-canvas" style="border-radius:10px;max-width:180px;width:100%"></canvas>
-            <div style="font-size:11px;color:var(--text3);margin:8px 0 10px">hash@walletofsatoshi.com</div>
+            <img src="./qr-lightning.png" alt="Lightning QR" style="width:180px;border-radius:10px;display:block;margin:0 auto 8px">
+            <div style="font-size:11px;color:var(--text3);margin:0 0 10px">hash@walletofsatoshi.com</div>
             <button onclick="copyLightning()" class="btn btn-p" style="font-size:13px">⚡ 라이트닝 주소 복사</button>
           </div>
         </div>
@@ -634,7 +644,7 @@ input:focus{border-color:var(--accent)}
       </div>
 
       <!-- 피드백 -->
-      <div class="s-row" onclick="window.open('https://x.com/activeriti','_blank')" style="cursor:pointer">
+      <div class="s-row" onclick="window.open('https://x.com/zztene/status/2068738967655309442?s=20','_blank')" style="cursor:pointer">
         <div class="s-lbl">𝕏 피드백</div>
         <span style="color:var(--text3);font-size:18px;line-height:1">›</span>
       </div>
@@ -652,6 +662,18 @@ input:focus{border-color:var(--accent)}
       </div>
     </div>
 
+  </div>
+
+  <!-- BIP39 -->
+  <div id="tab-bip39" class="hidden">
+    <div class="page-header">
+      <div class="page-title">BIP39 Word List</div>
+      <div class="page-sub">니모닉 단어 목록 2048개</div>
+    </div>
+    <div style="position:sticky;top:var(--top-bar);z-index:50;background:var(--bg);padding:0 0 0.75rem">
+      <input type="text" id="bip39-search" placeholder="단어 검색 (예: ab)" oninput="filterBIP39(this.value)" style="width:100%;padding:10px 14px;background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);color:var(--text);font-size:14px;font-family:var(--font);outline:none">
+    </div>
+    <div id="bip39-list" style="font-size:14px;padding-bottom:1rem"><div style="color:var(--text3);text-align:center;padding:2rem">목록 로딩 중...</div></div>
   </div>
 
 </main>

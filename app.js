@@ -5,7 +5,7 @@ const DEFAULT_S = {
   startDate: new Date().toISOString().slice(0,10),
   seed: 100, fx: 1400, goal: 10000, fxAuto: true,
   currency: 'KRW/USD', domestic: 'bithumb', overseas: 'binance',
-  startPage: 'dashboard',
+  startPage: 'dashboard', theme: 'system',
 };
 
 let S = {...DEFAULT_S}, E = [], currentUser = null, lineChart = null;
@@ -121,6 +121,7 @@ async function toggleFxAuto() {
 async function loadFromDB() {
   const { data: sd } = await db.from('cct_settings').select('*').eq('user_id', currentUser.id).single();
   if (sd) S = { ...DEFAULT_S, ...JSON.parse(sd.data) };
+  applyTheme(S.theme || 'system');
   const { data: ed } = await db.from('cct_entries').select('*').eq('user_id', currentUser.id).order('date', { ascending: true });
   if (ed) E = ed.map(r => ({ date: r.date, asset: +r.asset, memo: r.memo || '' }));
   if (S.fxAuto) await fetchFx(); else render();
@@ -307,10 +308,12 @@ function renderSettingsForm() {
   const dom = document.getElementById('s-domestic');
   const ov  = document.getElementById('s-overseas');
   const sp  = document.getElementById('s-startpage');
+  const th  = document.getElementById('s-theme');
   if (cur) cur.value = S.currency;
   if (dom) dom.value = S.domestic;
   if (ov)  ov.value  = S.overseas;
   if (sp)  sp.value  = S.startPage || 'dashboard';
+  if (th)  th.value  = S.theme || 'system';
   const toggle = document.getElementById('fx-toggle');
   const knob   = document.getElementById('fx-knob');
   const lbl    = document.getElementById('fx-toggle-lbl');
@@ -327,8 +330,8 @@ function renderSettingsForm() {
 }
 
 // ── 탭 ───────────────────────────────────────
-// 순서 = 하단바 버튼 순서와 일치: 대시보드|기록|계산기|결산|유틸리티|설정 (+capture는 인덱스 없음)
-const TABS = ['dashboard','log','calc','monthly','utility','settings','capture'];
+// 순서 = 하단바 버튼 순서와 일치: 대시보드|기록|계산기|결산|유틸리티|설정 (+capture,bip39는 인덱스 없음)
+const TABS = ['dashboard','log','calc','monthly','utility','settings','capture','bip39'];
 function showTab(name) {
   if (name !== currentTab) { prevTab = currentTab; currentTab = name; }
   TABS.forEach((t, i) => {
@@ -355,23 +358,12 @@ function toggleAccordion(id) {
   const open  = body.style.display === 'none';
   body.style.display = open ? 'block' : 'none';
   if (arrow) arrow.style.transform = open ? 'rotate(90deg)' : '';
-  if (open && id === 'acc-support') generateQR();
-}
-
-function generateQR() {
-  const canvas = document.getElementById('qr-canvas');
-  if (!canvas || canvas.dataset.generated) return;
-  if (typeof QRCode === 'undefined') return;
-  QRCode.toCanvas(canvas, 'lightning:' + LIGHTNING_ADDRESS, {
-    width: 180, margin: 2,
-    color: { dark: '#000000', light: '#ffffff' }
-  }, () => { canvas.dataset.generated = '1'; });
 }
 
 function updateTopBar() {
   const btn = document.querySelector('.top-bar-settings');
   if (!btn) return;
-  if (currentTab === 'settings') {
+  if (currentTab === 'settings' || currentTab === 'capture' || currentTab === 'bip39') {
     btn.setAttribute('aria-label', '뒤로');
     btn.innerHTML = BACK_SVG;
     btn.onclick = () => showTab(prevTab || 'dashboard');
@@ -446,8 +438,23 @@ function resetAll() {
   toast('초기화됐어요', 'err');
 }
 
+// ── 테마 ─────────────────────────────────────
+function applyTheme(theme) {
+  const actual = theme === 'system'
+    ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
+    : theme;
+  document.documentElement.dataset.theme = actual;
+}
+
+function saveTheme(theme) {
+  S.theme = theme;
+  localStorage.setItem('theme', theme);
+  applyTheme(theme);
+  persist();
+}
+
 // ── 환산 계산기 ───────────────────────────────
-let calcUnit = localStorage.getItem('calcUnit') || 'BTC';
+let calcUnit = localStorage.getItem('calcUnit') || 'USD';
 let _btcCacheAt = 0;
 
 async function refreshCalcPrices() {
@@ -608,3 +615,47 @@ document.addEventListener('keydown', e => {
 });
 
 clearInputs();
+
+// ── BIP39 ─────────────────────────────────────
+let bip39Words = null;
+
+async function showBIP39() {
+  showTab('bip39');
+  if (bip39Words) return;
+  try {
+    const res = await fetch('https://raw.githubusercontent.com/bitcoin/bips/master/bip-0039/english.txt');
+    const text = await res.text();
+    bip39Words = text.trim().split('\n').map(w => w.trim()).filter(Boolean);
+    renderBIP39List(bip39Words);
+  } catch(e) {
+    const el = document.getElementById('bip39-list');
+    if (el) el.innerHTML = '<div style="color:var(--red);text-align:center;padding:2rem">목록 로드 실패. 네트워크를 확인해주세요.</div>';
+  }
+}
+
+function filterBIP39(query) {
+  if (!bip39Words) return;
+  const q = query.toLowerCase().trim();
+  const filtered = q ? bip39Words.filter(w => w.startsWith(q)) : bip39Words;
+  renderBIP39List(filtered, !!q);
+}
+
+function renderBIP39List(words, isFiltered) {
+  const el = document.getElementById('bip39-list');
+  if (!el) return;
+  if (!words.length) {
+    el.innerHTML = '<div style="color:var(--text3);text-align:center;padding:2rem">검색 결과 없음</div>';
+    return;
+  }
+  let html = `<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border);font-weight:700;font-size:11px;color:var(--text3);letter-spacing:.06em;text-transform:uppercase"><span>단어</span><span>Binary (11-bit)</span></div>`;
+  words.forEach(word => {
+    const idx = bip39Words.indexOf(word);
+    const num = idx + 1;
+    const bin = num.toString(2).padStart(11, '0');
+    const g1 = bin.slice(0,4).split('').map(b => b==='1'?'●':'○').join('');
+    const g2 = bin.slice(4,8).split('').map(b => b==='1'?'●':'○').join('');
+    const g3 = bin.slice(8,11).split('').map(b => b==='1'?'●':'○').join('');
+    html += `<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid var(--border)"><span><span style="color:var(--text3);display:inline-block;min-width:36px;font-size:12px">${num}.</span><span style="color:var(--accent);font-weight:500">${word}</span></span><span style="font-size:11px;color:var(--text2);letter-spacing:2px;font-family:monospace">${g1} ${g2} ${g3}</span></div>`;
+  });
+  el.innerHTML = html;
+}
