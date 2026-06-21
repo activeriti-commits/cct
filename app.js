@@ -103,7 +103,7 @@ async function fetchMarketPrices() {
       ? fetch('https://api.coinbase.com/v2/prices/BTC-USD/spot').then(r=>r.json()).then(d=>({btc:parseFloat(d.data.amount)}))
       : fetch('https://api.binance.com/api/v3/ticker/price?symbol=BTCUSDT').then(r=>r.json()).then(d=>({btc:parseFloat(d.price)}))),
     fetch('https://api.upbit.com/v1/ticker?markets=KRW-BTC').then(r=>r.json()).then(d=>({krwBtc:d[0].trade_price})),
-    fetch('https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/usd/krw.json').then(r=>r.json()).then(d=>({usdKrw:d.usd.krw}))
+    fetch('https://api.frankfurter.app/latest?from=USD').then(r=>r.json()).then(d=>({usdKrw:d.rates.KRW}))
   ]);
   const r = {};
   if (btcRes.status==='fulfilled') Object.assign(r, btcRes.value);
@@ -360,7 +360,7 @@ function showTab(name) {
   });
   if (name === 'calc') showCalcBar();
   if (name === 'mempool') fetchAndRenderMempool();
-  if (name === 'utility') { loadTopAssets(); loadMarketIndicators(); loadFxRates(); }
+  if (name === 'utility') { loadTopAssets(); loadMarketIndicators(); loadFxRates(); loadMetalPrices(); }
   updateTopBar();
 }
 
@@ -518,14 +518,26 @@ function updateSatsPerUsd() {
 const NEXT_HALVING_BLOCK = 1_050_000;
 let _mempoolCacheAt = 0;
 
+function calcMinedBTC(height) {
+  let total = 0, reward = 50, h = height;
+  while (h > 0 && reward >= 0.00000001) {
+    const epochBlocks = Math.min(h, 210000);
+    total += epochBlocks * reward;
+    h -= epochBlocks;
+    reward /= 2;
+  }
+  return total;
+}
+
 async function fetchAndRenderMempool() {
   if (Date.now() - _mempoolCacheAt < 30000) return;
   const HALVING_START = 840_000;
-  const [heightRes, feesRes, blocksRes, diffRes] = await Promise.allSettled([
+  const [heightRes, feesRes, blocksRes, diffRes, hashrateRes] = await Promise.allSettled([
     fetch('https://mempool.space/api/blocks/tip/height').then(r => r.json()),
     fetch('https://mempool.space/api/v1/fees/recommended').then(r => r.json()),
     fetch('https://mempool.space/api/blocks').then(r => r.json()),
     fetch('https://mempool.space/api/v1/difficulty-adjustment').then(r => r.json()),
+    fetch('https://mempool.space/api/v1/mining/hashrate/3d').then(r => r.json()),
   ]);
   if (heightRes.status === 'fulfilled') {
     const height = heightRes.value;
@@ -543,6 +555,15 @@ async function fetchAndRenderMempool() {
     set('mp-halving-date', eta.toLocaleDateString('ko-KR', { year:'numeric', month:'long', day:'numeric' }));
     const daysLeft = Math.round(minutesLeft / 60 / 24);
     set('mp-halving-days', '약 ' + daysLeft.toLocaleString() + '일 후 (예상)');
+    // Timechain 통계
+    set('tc-total-blocks', height.toLocaleString());
+    const minedBTC = calcMinedBTC(height);
+    const unminedBTC = 21_000_000 - minedBTC;
+    set('tc-mined-btc', Math.round(minedBTC).toLocaleString() + ' BTC');
+    set('tc-unmined-btc', Math.round(unminedBTC).toLocaleString() + ' BTC');
+    const annualIssuance = 3.125 * 6 * 24 * 365.25;
+    const inflationPct = (annualIssuance / minedBTC * 100).toFixed(3);
+    set('tc-inflation', inflationPct + '%');
     _mempoolCacheAt = Date.now();
   }
   if (feesRes.status === 'fulfilled') {
@@ -586,6 +607,15 @@ async function fetchAndRenderMempool() {
       </div>`;
     }).join('');
   }
+  if (hashrateRes.status === 'fulfilled') {
+    const hrs = hashrateRes.value.hashrates;
+    if (hrs && hrs.length > 0) {
+      const latest = hrs[hrs.length - 1].avgHashrate;
+      const eh = (latest / 1e18).toFixed(2);
+      const el = document.getElementById('tc-hashrate');
+      if (el) el.textContent = eh + ' EH/s';
+    }
+  }
 }
 
 function toggleHalvingInfo() {
@@ -593,6 +623,20 @@ function toggleHalvingInfo() {
   const arrow = document.getElementById('mp-acc-arrow');
   const open = body.classList.toggle('open');
   if (arrow) arrow.style.transform = open ? 'rotate(90deg)' : '';
+  if (!open) {
+    body.style.overflowY = '';
+  } else {
+    setTimeout(() => { body.style.overflowY = 'auto'; }, 420);
+  }
+}
+
+function searchTx() {
+  const val = document.getElementById('tx-search').value.trim();
+  if (!val) return;
+  const url = val.length === 64
+    ? `https://mempool.space/tx/${val}`
+    : `https://mempool.space/address/${val}`;
+  window.open(url, '_blank');
 }
 
 // ── 외환 시장 ─────────────────────────────
@@ -604,17 +648,17 @@ async function loadFxRates(force = false) {
   const updated = document.getElementById('fx-updated');
   if (!grid) return;
   try {
-    const res = await fetch('https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/usd.json');
+    const res = await fetch('https://api.frankfurter.app/latest?from=USD');
     if (!res.ok) throw new Error();
     const d = await res.json();
-    const fx = d.usd;
+    const r = d.rates;
     const pairs = [
-      { pair: 'USD/KRW', src: '외환 API', val: fx.krw, fmt: v => '₩' + Math.round(v).toLocaleString() },
-      { pair: 'USD/JPY', src: '외환 API', val: fx.jpy, fmt: v => '¥' + v.toFixed(2) },
-      { pair: 'USD/EUR', src: '외환 API', val: fx.eur, fmt: v => '€' + v.toFixed(4) },
-      { pair: 'USD/CNY', src: '외환 API', val: fx.cny, fmt: v => '¥' + v.toFixed(4) },
-      { pair: 'USD/GBP', src: '외환 API', val: fx.gbp, fmt: v => '£' + v.toFixed(4) },
-      { pair: 'USD/SGD', src: '외환 API', val: fx.sgd, fmt: v => 'S$' + v.toFixed(4) },
+      { pair: 'USD/KRW', val: r.KRW, fmt: v => '₩' + Math.round(v).toLocaleString() },
+      { pair: 'USD/JPY', val: r.JPY, fmt: v => '¥' + v.toFixed(2) },
+      { pair: 'USD/EUR', val: r.EUR, fmt: v => '€' + v.toFixed(4) },
+      { pair: 'USD/CNY', val: r.CNY, fmt: v => '¥' + v.toFixed(4) },
+      { pair: 'USD/GBP', val: r.GBP, fmt: v => '£' + v.toFixed(4) },
+      { pair: 'USD/SGD', val: r.SGD, fmt: v => 'S$' + v.toFixed(4) },
     ];
     grid.innerHTML = pairs.map(p => `
       <div class="fx-card">
@@ -622,10 +666,45 @@ async function loadFxRates(force = false) {
         <div class="fx-rate">${p.val ? p.fmt(p.val) : '-'}</div>
       </div>`).join('');
     const src = document.getElementById('fx-src-label');
-    if (src) src.textContent = 'fawazahmed0/currency-api · jsDelivr CDN';
+    if (src) src.textContent = 'Frankfurter · ECB 유럽중앙은행 기준';
     if (loading) loading.style.display = 'none';
     grid.style.display = '';
     _fxCacheAt = Date.now();
+    if (updated) {
+      const t = new Date();
+      updated.textContent = `${t.getHours().toString().padStart(2,'0')}:${t.getMinutes().toString().padStart(2,'0')} 업데이트`;
+    }
+  } catch(_) {
+    if (loading) loading.textContent = '불러오기 실패';
+  }
+}
+
+// ── 원자재 가격 ─────────────────────────────
+let _metalsCacheAt = 0;
+async function loadMetalPrices(force = false) {
+  if (!force && Date.now() - _metalsCacheAt < 300000) return;
+  const loading = document.getElementById('metals-loading');
+  const grid    = document.getElementById('metals-grid');
+  const updated = document.getElementById('metals-updated');
+  if (!grid) return;
+  try {
+    const res = await fetch('https://api.metals.live/v1/spot/gold,silver');
+    if (!res.ok) throw new Error();
+    const data = await res.json();
+    const vals = {};
+    data.forEach(item => Object.assign(vals, item));
+    const gold = vals.gold;
+    const silver = vals.silver;
+    grid.innerHTML = [
+      { pair: '금 (XAU/oz)', val: gold,   fmt: v => '$' + Math.round(v).toLocaleString() },
+      { pair: '은 (XAG/oz)', val: silver, fmt: v => '$' + v.toFixed(2) },
+    ].map(p => `<div class="fx-card">
+      <div class="fx-pair">${p.pair}</div>
+      <div class="fx-rate">${p.val != null ? p.fmt(p.val) : '-'}</div>
+    </div>`).join('');
+    if (loading) loading.style.display = 'none';
+    grid.style.display = '';
+    _metalsCacheAt = Date.now();
     if (updated) {
       const t = new Date();
       updated.textContent = `${t.getHours().toString().padStart(2,'0')}:${t.getMinutes().toString().padStart(2,'0')} 업데이트`;

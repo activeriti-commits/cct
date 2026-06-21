@@ -635,6 +635,18 @@ input:focus{border-color:var(--accent)}
       <div style="font-size:10px;color:var(--text3);text-align:right;margin-top:8px">mempool.space</div>
     </div>
 
+    <!-- 트랜잭션 검색 -->
+    <div class="mp-section-title">트랜잭션 / 주소 검색</div>
+    <div class="card" style="margin-bottom:1rem">
+      <div style="display:flex;gap:8px">
+        <input id="tx-search" type="text" placeholder="TXID 또는 주소 입력..." autocomplete="off" spellcheck="false"
+          style="flex:1;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:10px 12px;color:var(--text);font-size:13px;font-family:var(--font);outline:none"
+          onkeydown="if(event.key==='Enter')searchTx()">
+        <button onclick="searchTx()" style="background:var(--accent);border:none;border-radius:8px;padding:10px 16px;color:#fff;font-size:13px;cursor:pointer;font-family:var(--font);font-weight:600;white-space:nowrap">검색</button>
+      </div>
+      <div style="font-size:11px;color:var(--text3);margin-top:8px">64자 hex → 트랜잭션 · 그 외 → 주소 검색 (mempool.space)</div>
+    </div>
+
     <!-- 최근 블록 -->
     <div class="mp-section-title">최근 블록</div>
     <div class="mp-blocks-scroll" id="mp-blocks-row">
@@ -717,6 +729,37 @@ input:focus{border-color:var(--accent)}
         </div>
       </div>
     </div>
+
+    <!-- Timechain 통계 -->
+    <div class="mp-section-title">Timechain 통계</div>
+    <div class="card" style="margin-bottom:1rem;padding:0.9rem 1.25rem">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+        <div>
+          <div style="font-size:11px;color:var(--text3);letter-spacing:.04em;margin-bottom:4px">총 블록 수</div>
+          <div style="font-size:17px;font-weight:700;color:var(--text)" id="tc-total-blocks">-</div>
+        </div>
+        <div>
+          <div style="font-size:11px;color:var(--text3);letter-spacing:.04em;margin-bottom:4px">해시레이트</div>
+          <div style="font-size:17px;font-weight:700;color:var(--green)" id="tc-hashrate">- EH/s</div>
+        </div>
+        <div>
+          <div style="font-size:11px;color:var(--text3);letter-spacing:.04em;margin-bottom:4px">채굴된 BTC</div>
+          <div style="font-size:17px;font-weight:700;color:var(--text)" id="tc-mined-btc">-</div>
+        </div>
+        <div>
+          <div style="font-size:11px;color:var(--text3);letter-spacing:.04em;margin-bottom:4px">미채굴 BTC</div>
+          <div style="font-size:17px;font-weight:700;color:var(--text3)" id="tc-unmined-btc">-</div>
+        </div>
+      </div>
+      <div style="border-top:1px solid var(--border);padding-top:10px;display:flex;justify-content:space-between;align-items:center">
+        <div>
+          <div style="font-size:11px;color:var(--text3);letter-spacing:.04em;margin-bottom:4px">Bitcoin 인플레이션률 (연)</div>
+          <div style="font-size:18px;font-weight:700;color:var(--text)" id="tc-inflation">-</div>
+        </div>
+        <div style="text-align:right;font-size:10px;color:var(--text3)">블록 높이 기반<br>계산값</div>
+      </div>
+      <div style="font-size:10px;color:var(--text3);text-align:right;margin-top:8px">mempool.space · 계산값</div>
+    </div>
   </div>
 
   <!-- 유틸리티 -->
@@ -748,6 +791,20 @@ input:focus{border-color:var(--accent)}
           <div style="font-size:18px;font-weight:700;color:var(--text);margin-top:2px" id="btc-dom">-</div>
         </div>
         <button onclick="loadMarketIndicators(true)" style="background:none;border:none;color:var(--accent);font-size:12px;cursor:pointer;font-family:var(--font)">↻ 새로고침</button>
+      </div>
+    </div>
+
+    <!-- 원자재 가격 -->
+    <div class="util-section-hdr" style="margin-bottom:8px">
+      <div class="s-section-title" style="padding:0;margin:0">원자재 가격</div>
+      <span id="metals-updated" style="font-size:11px;color:var(--text3)"></span>
+    </div>
+    <div class="card" style="margin-bottom:1rem">
+      <div id="metals-loading" style="font-size:13px;color:var(--text3);text-align:center;padding:8px 0">불러오는 중...</div>
+      <div id="metals-grid" class="fx-grid" style="display:none"></div>
+      <div style="border-top:1px solid var(--border);margin-top:12px;padding-top:10px;display:flex;justify-content:space-between;align-items:center">
+        <span style="font-size:11px;color:var(--text3)">metals.live · USD/트로이온스</span>
+        <button onclick="loadMetalPrices(true)" style="background:none;border:none;color:var(--accent);font-size:12px;cursor:pointer;font-family:var(--font)">↻ 새로고침</button>
       </div>
     </div>
 
@@ -810,6 +867,31 @@ input:focus{border-color:var(--accent)}
       </div>
       <div class="util-link" onclick="window.open('https://amboss.space','_blank')">
         <div class="util-link-left"><span class="util-link-icon">⚡</span><div><div class="util-link-lbl">Amboss</div><div class="util-link-sub">라이트닝 노드 탐색기</div></div></div>
+        <span class="util-arrow">›</span>
+      </div>
+      <div class="util-link" onclick="window.open('https://yellow.kr','_blank')">
+        <div class="util-link-left"><span class="util-link-icon">🟡</span><div><div class="util-link-lbl">Yellow.kr</div><div class="util-link-sub">비트코인 한국어 정보</div></div></div>
+        <span class="util-arrow">›</span>
+      </div>
+    </div>
+
+    <!-- 글로벌 매크로 -->
+    <div class="s-section-title">글로벌 매크로</div>
+    <div class="card" style="margin-bottom:1rem">
+      <div class="util-link" onclick="window.open('https://fred.stlouisfed.org/series/M2SL','_blank')">
+        <div class="util-link-left"><span class="util-link-icon">🏦</span><div><div class="util-link-lbl">M2 통화량</div><div class="util-link-sub">FRED · 미국 연방준비은행</div></div></div>
+        <span class="util-arrow">›</span>
+      </div>
+      <div class="util-link" onclick="window.open('https://tradingeconomics.com/commodity/crude-oil','_blank')">
+        <div class="util-link-left"><span class="util-link-icon">🛢</span><div><div class="util-link-lbl">WTI 원유 가격</div><div class="util-link-sub">tradingeconomics.com</div></div></div>
+        <span class="util-arrow">›</span>
+      </div>
+      <div class="util-link" onclick="window.open('https://tradingeconomics.com/commodity/gold','_blank')">
+        <div class="util-link-left"><span class="util-link-icon">🥇</span><div><div class="util-link-lbl">금 (Gold) 차트</div><div class="util-link-sub">tradingeconomics.com</div></div></div>
+        <span class="util-arrow">›</span>
+      </div>
+      <div class="util-link" onclick="window.open('https://tradingeconomics.com/commodity/silver','_blank')">
+        <div class="util-link-left"><span class="util-link-icon">🥈</span><div><div class="util-link-lbl">은 (Silver) 차트</div><div class="util-link-sub">tradingeconomics.com</div></div></div>
         <span class="util-arrow">›</span>
       </div>
     </div>
