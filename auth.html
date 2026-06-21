@@ -138,8 +138,8 @@ input::placeholder{color:var(--text3)}
         <input type="password" id="r-pw" placeholder="8자 이상" oninput="checkStr(this.value)">
         <button class="eye" onclick="togglePw('r-pw',this)" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button>
       </div>
-      <div class="str-bar"><div class="str-fill" id="str-fill"></div></div>
-      <div class="str-label" id="str-lbl"></div>
+      <div class="str-bar"><div class="str-fill" id="r-str-fill"></div></div>
+      <div class="str-label" id="r-str-lbl"></div>
     </div>
     <div class="fg" style="margin-bottom:0">
       <label class="fl">비밀번호 확인</label>
@@ -215,18 +215,23 @@ function togglePw(id, btn) {
 }
 
 function checkStr(pw) {
+  const isReset = document.getElementById('c-reset').style.display !== 'none';
+  const fillId = isReset ? 'r-str-fill' : 'str-fill';
+  const lblId  = isReset ? 'r-str-lbl'  : 'str-lbl';
   const hasLen=pw.length>=8, hasNum=/\d/.test(pw), hasSp=/[!@#$%^&*(),.?":{}|<>]/.test(pw);
   const score=[hasLen,hasNum,hasSp].filter(Boolean).length;
   const cfgs=[{w:'33%',c:'#ff4d6a',t:'약함'},{w:'66%',c:'#f59e0b',t:'보통'},{w:'100%',c:'#00c48c',t:'강함'}];
   const cfg = pw ? (cfgs[score-1]||cfgs[0]) : {w:'0',c:'',t:''};
-  document.getElementById('str-fill').style.cssText=`width:${cfg.w};background:${cfg.c}`;
-  document.getElementById('str-lbl').textContent=cfg.t;
-  document.getElementById('str-lbl').style.color=cfg.c;
-  [['r-len',hasLen],['r-num',hasNum],['r-sp',hasSp]].forEach(([id,ok])=>{
-    const el=document.getElementById(id);
-    el.className='rule'+(ok?' ok':'');
-    el.textContent=(ok?'✓':'○')+el.textContent.slice(1);
-  });
+  document.getElementById(fillId).style.cssText=`width:${cfg.w};background:${cfg.c}`;
+  document.getElementById(lblId).textContent=cfg.t;
+  document.getElementById(lblId).style.color=cfg.c;
+  if (!isReset) {
+    [['r-len',hasLen],['r-num',hasNum],['r-sp',hasSp]].forEach(([id,ok])=>{
+      const el=document.getElementById(id);
+      el.className='rule'+(ok?' ok':'');
+      el.textContent=(ok?'✓':'○')+el.textContent.slice(1);
+    });
+  }
 }
 
 async function doLogin() {
@@ -282,7 +287,7 @@ async function doForgot(){
   const email=document.getElementById('f-email').value.trim();
   if(!email){setMsg('이메일을 입력해주세요.','err','forgot-msg');return;}
   setMsg('','err','forgot-msg'); setLoading('btn-forgot',true,'재설정 링크 보내기');
-  const {error}=await db.auth.resetPasswordForEmail(email,{redirectTo:location.origin+'/index.html'});
+  const {error}=await db.auth.resetPasswordForEmail(email,{redirectTo:location.origin+'/auth.html'});
   setLoading('btn-forgot',false,'재설정 링크 보내기');
   setMsg(error?'메일 발송에 실패했어요.':'재설정 링크를 보냈어요. 이메일을 확인해주세요.',error?'err':'ok','forgot-msg');
 }

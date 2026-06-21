@@ -12,6 +12,7 @@ const db = window._supabase;
 
 // ── 인증 ─────────────────────────────────────
 db.auth.onAuthStateChange(async (event, session) => {
+  if (event === 'PASSWORD_RECOVERY') { location.href = './auth.html'; return; }
   currentUser = session?.user ?? null;
   if (!currentUser) { location.href = './auth.html'; return; }
   updateAuthUI();
