@@ -241,6 +241,29 @@ input:focus{border-color:var(--accent)}
 .ta-price{font-size:13px;font-weight:600;color:var(--text)}
 .ta-mcap{font-size:11px;color:var(--text3);margin-top:1px}
 .ta-chg{font-size:12px;font-weight:500;min-width:52px;text-align:right;flex-shrink:0}
+/* ── 멤풀 최근 블록 ── */
+.mp-blocks-scroll{display:flex;gap:8px;overflow-x:auto;padding-bottom:6px;margin-bottom:1rem;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+.mp-blocks-scroll::-webkit-scrollbar{display:none}
+.mp-blk{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:12px 10px;flex-shrink:0;width:92px;text-align:center}
+.mp-blk-h{font-size:13px;font-weight:700;color:var(--text)}
+.mp-blk-fee{font-size:11px;font-weight:600;margin-top:5px}
+.mp-blk-txs{font-size:10px;color:var(--text3);margin-top:3px}
+.mp-blk-age{font-size:10px;color:var(--text3);margin-top:3px}
+.mp-halving-prog{height:5px;background:var(--bg3);border-radius:3px;margin:10px 0 6px;overflow:hidden}
+.mp-halving-fill{height:100%;border-radius:3px;background:linear-gradient(90deg,var(--accent),var(--green));transition:width .8s ease}
+/* ── Utility 외환·공포탐욕 ── */
+.util-section-hdr{display:flex;justify-content:space-between;align-items:center;padding:0 0 8px}
+.fx-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.fx-card{background:var(--bg3);border-radius:8px;padding:12px 14px}
+.fx-pair{font-size:11px;color:var(--text3);letter-spacing:.04em;font-weight:500}
+.fx-rate{font-size:19px;font-weight:700;color:var(--text);margin-top:3px}
+.fng-row{display:flex;align-items:center;gap:16px;padding:6px 0}
+.fng-num{font-size:48px;font-weight:700;line-height:1;min-width:72px}
+.fng-detail{flex:1}
+.fng-lbl{font-size:15px;font-weight:600;color:var(--text)}
+.fng-sub{font-size:11px;color:var(--text3);margin-top:2px}
+.fng-track{height:7px;border-radius:4px;background:linear-gradient(90deg,var(--green) 0%,#ffd700 50%,var(--red) 100%);margin-top:12px;position:relative}
+.fng-needle{position:absolute;top:-4px;width:14px;height:14px;border-radius:50%;background:var(--text);border:2px solid var(--bg2);transform:translateX(-50%);transition:left .6s cubic-bezier(.4,0,.2,1)}
 /* ── 반감기 테이블 ── */
 .halving-tbl{width:100%;border-collapse:collapse;font-size:12px}
 .halving-tbl th{color:var(--text3);font-weight:400;font-size:11px;letter-spacing:.04em;padding:6px 8px;border-bottom:1px solid var(--border);text-align:right}
@@ -325,6 +348,10 @@ input:focus{border-color:var(--accent)}
             <span style="color:var(--text3)">BTC</span>
             <span id="btc-price" style="color:var(--text);font-weight:500">-</span>
           </div>
+          <button onclick="showTab('premium')" title="김치 프리미엄" style="background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:6px 10px;cursor:pointer;display:flex;align-items:center;gap:4px;font-family:var(--font)">
+            <span style="font-size:11px;color:var(--text3)">₩</span>
+            <span id="dash-prem-btn" style="font-size:12px;font-weight:700;color:var(--text2)">-</span>
+          </button>
           <button onclick="showTab('capture')" title="캡처" style="background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:6px 10px;cursor:pointer;color:var(--text2);display:flex;align-items:center">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
           </button>
@@ -550,39 +577,46 @@ input:focus{border-color:var(--accent)}
   <!-- 멤풀 -->
   <div id="tab-mempool" class="hidden">
     <div class="page-header">
-      <div class="page-title">멤풀</div>
-      <div class="page-sub">Bitcoin 네트워크 실시간 현황</div>
+      <div style="display:flex;justify-content:space-between;align-items:flex-start">
+        <div>
+          <div class="page-title">멤풀</div>
+          <div class="page-sub">Bitcoin 네트워크 실시간 현황</div>
+        </div>
+        <div style="text-align:right;flex-shrink:0;margin-top:4px">
+          <div style="font-size:18px;font-weight:700;color:var(--text)" id="mp-block-height">-</div>
+          <div style="font-size:10px;color:var(--text3);letter-spacing:.06em">BLOCK HEIGHT</div>
+        </div>
+      </div>
     </div>
 
-    <!-- 블록 높이 -->
-    <div class="mp-section-title">현재 블록 높이</div>
-    <div class="mp-block-card">
-      <div class="mp-block-num" id="mp-block-height">-</div>
-      <div class="mp-block-lbl">Block Height</div>
-    </div>
-
-    <!-- 수수료 -->
-    <div class="mp-section-title">트랜잭션 수수료 (sat/vB)</div>
-    <div class="mp-fee-grid">
-      <div class="mp-fee-card">
-        <div class="mp-fee-val" id="mp-fee-fast">-</div>
+    <!-- 수수료 (크게) -->
+    <div class="mp-section-title">권장 수수료 (sat/vB)</div>
+    <div class="mp-fee-grid" style="margin-bottom:1.25rem">
+      <div class="mp-fee-card" style="border-color:var(--green)">
+        <div class="mp-fee-val" id="mp-fee-fast" style="color:var(--green)">-</div>
         <div class="mp-fee-unit">sat/vB</div>
-        <div class="mp-fee-lbl">빠름 (~10분)</div>
+        <div class="mp-fee-lbl">빠름 ~10분</div>
       </div>
       <div class="mp-fee-card">
         <div class="mp-fee-val" id="mp-fee-half">-</div>
         <div class="mp-fee-unit">sat/vB</div>
-        <div class="mp-fee-lbl">보통 (~30분)</div>
+        <div class="mp-fee-lbl">보통 ~30분</div>
       </div>
       <div class="mp-fee-card">
         <div class="mp-fee-val" id="mp-fee-hour">-</div>
         <div class="mp-fee-unit">sat/vB</div>
-        <div class="mp-fee-lbl">저렴 (~1시간)</div>
+        <div class="mp-fee-lbl">저렴 ~1시간</div>
       </div>
     </div>
 
+    <!-- 최근 블록 -->
+    <div class="mp-section-title">최근 블록</div>
+    <div class="mp-blocks-scroll" id="mp-blocks-row">
+      <div style="font-size:13px;color:var(--text3);padding:12px 0">불러오는 중...</div>
+    </div>
+
     <!-- 반감기 카운트다운 -->
-    <div class="mp-section-title">다음 반감기</div>
+    <div class="mp-section-title">다음 반감기 (6차)</div>
     <div class="mp-halving-card">
       <div class="mp-halving-row">
         <span class="mp-halving-lbl">목표 블록</span>
@@ -592,7 +626,11 @@ input:focus{border-color:var(--accent)}
         <span class="mp-halving-lbl">남은 블록</span>
         <span class="mp-halving-val" id="mp-halving-remain">-</span>
       </div>
-      <div class="mp-halving-row" style="border-top:1px solid var(--border);margin-top:6px;padding-top:12px">
+      <div class="mp-halving-prog"><div class="mp-halving-fill" id="mp-halving-fill" style="width:0%"></div></div>
+      <div style="font-size:10px;color:var(--text3);display:flex;justify-content:space-between;margin-bottom:8px">
+        <span>840,000</span><span id="mp-halving-pct" style="color:var(--accent)">0%</span><span>1,050,000</span>
+      </div>
+      <div class="mp-halving-row" style="border-top:1px solid var(--border);padding-top:12px">
         <span class="mp-halving-lbl">예상 날짜</span>
         <div>
           <div class="mp-halving-val" id="mp-halving-date">-</div>
@@ -602,7 +640,7 @@ input:focus{border-color:var(--accent)}
 
       <!-- 반감기 정보 아코디언 -->
       <div class="mp-acc-header" onclick="toggleHalvingInfo()">
-        <span class="mp-acc-title">반감기란?</span>
+        <span class="mp-acc-title">반감기 전체 일정</span>
         <span class="mp-acc-arrow" id="mp-acc-arrow">›</span>
       </div>
       <div class="mp-acc-body" id="mp-acc-body">
@@ -659,12 +697,48 @@ input:focus{border-color:var(--accent)}
   <div id="tab-utility" class="hidden">
     <div class="page-header">
       <div class="page-title">유틸리티</div>
-      <div class="page-sub">비트코인 최고주의자를 위한 공간</div>
+      <div class="page-sub">글로벌 금융 & Bitcoin 데이터</div>
     </div>
 
-    <!-- Top Assets by Market Cap -->
-    <div style="display:flex;justify-content:space-between;align-items:center;padding:0 0 8px">
-      <div class="s-section-title" style="padding:0;margin:0">시가총액 Top 100</div>
+    <!-- 시장 위험지표 -->
+    <div class="s-section-title">시장 위험지표</div>
+    <div class="card" style="margin-bottom:1rem">
+      <div class="ct">공포 & 탐욕 지수</div>
+      <div id="fng-loading" style="font-size:13px;color:var(--text3);text-align:center;padding:8px 0">불러오는 중...</div>
+      <div id="fng-content" style="display:none">
+        <div class="fng-row">
+          <div class="fng-num" id="fng-num">-</div>
+          <div class="fng-detail">
+            <div class="fng-lbl" id="fng-lbl">-</div>
+            <div class="fng-sub" id="fng-sub">-</div>
+          </div>
+        </div>
+        <div class="fng-track"><div class="fng-needle" id="fng-needle" style="left:50%"></div></div>
+        <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--text3);margin-top:4px"><span>극도 공포</span><span>중립</span><span>극도 탐욕</span></div>
+      </div>
+      <div style="border-top:1px solid var(--border);margin-top:14px;padding-top:12px;display:flex;justify-content:space-between;align-items:center">
+        <div>
+          <div style="font-size:11px;color:var(--text3)">BTC 도미넌스</div>
+          <div style="font-size:18px;font-weight:700;color:var(--text);margin-top:2px" id="btc-dom">-</div>
+        </div>
+        <button onclick="loadMarketIndicators(true)" style="background:none;border:none;color:var(--accent);font-size:12px;cursor:pointer;font-family:var(--font)">↻ 새로고침</button>
+      </div>
+    </div>
+
+    <!-- 외환 시장 -->
+    <div class="util-section-hdr" style="margin-bottom:8px">
+      <div class="s-section-title" style="padding:0;margin:0">외환 시장</div>
+      <span id="fx-updated" style="font-size:11px;color:var(--text3)"></span>
+    </div>
+    <div class="card" style="margin-bottom:1rem">
+      <div id="fx-loading" style="font-size:13px;color:var(--text3);text-align:center;padding:8px 0">불러오는 중...</div>
+      <div id="fx-grid" class="fx-grid" style="display:none"></div>
+      <div style="margin-top:12px;font-size:11px;color:var(--text3);text-align:right">jsDelivr exchange-api</div>
+    </div>
+
+    <!-- 암호화폐 시가총액 -->
+    <div class="util-section-hdr" style="margin-bottom:8px">
+      <div class="s-section-title" style="padding:0;margin:0">암호화폐 시가총액</div>
       <span id="top-assets-updated" style="font-size:11px;color:var(--text3)"></span>
     </div>
     <div class="card" style="margin-bottom:1rem;padding:0;overflow:hidden">
@@ -672,20 +746,30 @@ input:focus{border-color:var(--accent)}
       <div id="top-assets-list" style="display:none;max-height:480px;overflow-y:auto"></div>
       <div style="border-top:1px solid var(--border);padding:10px 16px;display:flex;justify-content:space-between;align-items:center">
         <span style="font-size:11px;color:var(--text3)">CoinGecko</span>
-        <button onclick="loadTopAssets(true)" style="background:none;border:none;color:var(--accent);font-size:12px;cursor:pointer;font-family:var(--font);padding:2px 0">↻ 새로고침</button>
+        <button onclick="loadTopAssets(true)" style="background:none;border:none;color:var(--accent);font-size:12px;cursor:pointer;font-family:var(--font)">↻ 새로고침</button>
       </div>
     </div>
 
+    <!-- 글로벌 자산 시가총액 -->
+    <div class="s-section-title">글로벌 자산 시가총액</div>
+    <div class="card" style="margin-bottom:1rem">
+      <div class="util-link" onclick="window.open('https://companiesmarketcap.com/assets-by-market-cap/','_blank')">
+        <div class="util-link-left"><span class="util-link-icon">🌐</span><div><div class="util-link-lbl">All Assets by Market Cap</div><div class="util-link-sub">기업 · 귀금속 · 암호화폐 · ETF 통합 순위</div></div></div>
+        <span class="util-arrow">›</span>
+      </div>
+      <div class="util-link" onclick="window.open('https://companiesmarketcap.com/gold/','_blank')">
+        <div class="util-link-left"><span class="util-link-icon">🥇</span><div><div class="util-link-lbl">Gold Market Cap</div><div class="util-link-sub">금 시가총액 vs Bitcoin</div></div></div>
+        <span class="util-arrow">›</span>
+      </div>
+      <div class="util-link" onclick="window.open('https://companiesmarketcap.com/crypto/','_blank')">
+        <div class="util-link-left"><span class="util-link-icon">₿</span><div><div class="util-link-lbl">Crypto Market Cap</div><div class="util-link-sub">암호화폐 시가총액 순위</div></div></div>
+        <span class="util-arrow">›</span>
+      </div>
+    </div>
+
+    <!-- Bitcoin 데이터 -->
     <div class="s-section-title">Bitcoin 데이터</div>
     <div class="card" style="margin-bottom:1rem">
-      <div class="util-link" onclick="window.open('https://alternative.me/crypto/fear-and-greed-index/','_blank')">
-        <div class="util-link-left"><span class="util-link-icon">😱</span><div><div class="util-link-lbl">공포 & 탐욕 지수</div><div class="util-link-sub">alternative.me</div></div></div>
-        <span class="util-arrow">›</span>
-      </div>
-      <div class="util-link" onclick="window.open('https://www.coingecko.com/en/global-charts','_blank')">
-        <div class="util-link-left"><span class="util-link-icon">📊</span><div><div class="util-link-lbl">Bitcoin 도미넌스</div><div class="util-link-sub">CoinGecko</div></div></div>
-        <span class="util-arrow">›</span>
-      </div>
       <div class="util-link" onclick="window.open('https://mempool.space','_blank')">
         <div class="util-link-left"><span class="util-link-icon">⛏</span><div><div class="util-link-lbl">Mempool 블록 익스플로러</div><div class="util-link-sub">mempool.space</div></div></div>
         <span class="util-arrow">›</span>
@@ -694,20 +778,17 @@ input:focus{border-color:var(--accent)}
         <div class="util-link-left"><span class="util-link-icon">🔍</span><div><div class="util-link-lbl">온체인 분석</div><div class="util-link-sub">lookintobitcoin.com</div></div></div>
         <span class="util-arrow">›</span>
       </div>
-    </div>
-
-    <div class="s-section-title">라이트닝 네트워크</div>
-    <div class="card" style="margin-bottom:1rem">
+      <div class="util-link" onclick="window.open('https://alternative.me/crypto/fear-and-greed-index/','_blank')">
+        <div class="util-link-left"><span class="util-link-icon">😱</span><div><div class="util-link-lbl">공포 & 탐욕 지수</div><div class="util-link-sub">alternative.me</div></div></div>
+        <span class="util-arrow">›</span>
+      </div>
       <div class="util-link" onclick="window.open('https://amboss.space','_blank')">
         <div class="util-link-left"><span class="util-link-icon">⚡</span><div><div class="util-link-lbl">Amboss</div><div class="util-link-sub">라이트닝 노드 탐색기</div></div></div>
         <span class="util-arrow">›</span>
       </div>
-      <div class="util-link" onclick="window.open('https://1ml.com','_blank')">
-        <div class="util-link-left"><span class="util-link-icon">🔗</span><div><div class="util-link-lbl">1ML</div><div class="util-link-sub">채널 & 노드 통계</div></div></div>
-        <span class="util-arrow">›</span>
-      </div>
     </div>
 
+    <!-- 학습 -->
     <div class="s-section-title">학습</div>
     <div class="card" style="margin-bottom:1rem">
       <div class="util-link" onclick="window.open('https://bitcoin.org/bitcoin.pdf','_blank')">

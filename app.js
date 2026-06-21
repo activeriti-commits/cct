@@ -358,7 +358,7 @@ function showTab(name) {
   });
   if (name === 'calc') showCalcBar();
   if (name === 'mempool') fetchAndRenderMempool();
-  if (name === 'utility') loadTopAssets();
+  if (name === 'utility') { loadTopAssets(); loadMarketIndicators(); loadFxRates(); }
   updateTopBar();
 }
 
@@ -488,6 +488,7 @@ function updatePremiumDisplay() {
   };
 
   set('dash-kimchi', fmtPct, color);
+  set('dash-prem-btn', fmtPct, color);
   set('prem-pct', fmtPct, color);
   set('calc-prem-badge', fmtPct, color);
   set('prem-diff-krw', (premDiff >= 0 ? '+' : '') + Math.round(premDiff).toLocaleString() + ' KRW', color);
@@ -520,25 +521,28 @@ let _mempoolCacheAt = 0;
 
 async function fetchAndRenderMempool() {
   if (Date.now() - _mempoolCacheAt < 30000) return;
-  const heightEl = document.getElementById('mp-block-height');
-  const [heightRes, feesRes] = await Promise.allSettled([
+  const HALVING_START = 840_000;
+  const [heightRes, feesRes, blocksRes] = await Promise.allSettled([
     fetch('https://mempool.space/api/blocks/tip/height').then(r => r.json()),
     fetch('https://mempool.space/api/v1/fees/recommended').then(r => r.json()),
+    fetch('https://mempool.space/api/blocks').then(r => r.json()),
   ]);
   if (heightRes.status === 'fulfilled') {
     const height = heightRes.value;
-    if (heightEl) heightEl.textContent = height.toLocaleString();
+    const set = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+    set('mp-block-height', height.toLocaleString());
     const remain = Math.max(0, NEXT_HALVING_BLOCK - height);
-    const el = document.getElementById('mp-halving-remain');
-    if (el) el.textContent = remain.toLocaleString() + ' 블록';
+    set('mp-halving-remain', remain.toLocaleString() + ' 블록');
+    const pct = Math.min(100, Math.round((height - HALVING_START) / (NEXT_HALVING_BLOCK - HALVING_START) * 100));
+    const fill = document.getElementById('mp-halving-fill');
+    const pctEl = document.getElementById('mp-halving-pct');
+    if (fill) fill.style.width = pct + '%';
+    if (pctEl) pctEl.textContent = pct + '%';
     const minutesLeft = remain * 10;
-    const msLeft = minutesLeft * 60 * 1000;
-    const eta = new Date(Date.now() + msLeft);
-    const dateEl = document.getElementById('mp-halving-date');
-    const daysEl = document.getElementById('mp-halving-days');
-    if (dateEl) dateEl.textContent = eta.toLocaleDateString('ko-KR', { year:'numeric', month:'long', day:'numeric' });
+    const eta = new Date(Date.now() + minutesLeft * 60 * 1000);
+    set('mp-halving-date', eta.toLocaleDateString('ko-KR', { year:'numeric', month:'long', day:'numeric' }));
     const daysLeft = Math.round(minutesLeft / 60 / 24);
-    if (daysEl) daysEl.textContent = '약 ' + daysLeft.toLocaleString() + '일 후 (예상)';
+    set('mp-halving-days', '약 ' + daysLeft.toLocaleString() + '일 후 (예상)');
     _mempoolCacheAt = Date.now();
   }
   if (feesRes.status === 'fulfilled') {
@@ -548,6 +552,28 @@ async function fetchAndRenderMempool() {
     set('mp-fee-half', f.halfHourFee);
     set('mp-fee-hour', f.hourFee);
   }
+  if (blocksRes.status === 'fulfilled') {
+    const blocks = blocksRes.value.slice(0, 8);
+    const row = document.getElementById('mp-blocks-row');
+    if (!row) return;
+    const now = Date.now() / 1000;
+    row.innerHTML = blocks.map(b => {
+      const ageSec = now - b.timestamp;
+      const age = ageSec < 3600
+        ? Math.round(ageSec / 60) + '분 전'
+        : Math.round(ageSec / 3600) + '시간 전';
+      const fee = b.extras?.medianFee ?? b.medianFee ?? '?';
+      const feeColor = fee < 5 ? 'var(--green)' : fee < 20 ? 'var(--text)' : 'var(--red)';
+      const sizekb = b.size ? (b.size / 1000).toFixed(0) + 'KB' : '';
+      return `<div class="mp-blk">
+        <div class="mp-blk-h">${b.height.toLocaleString()}</div>
+        <div class="mp-blk-fee" style="color:${feeColor}">${fee} <span style="font-size:9px;color:var(--text3)">sat/vB</span></div>
+        <div class="mp-blk-txs">${b.tx_count?.toLocaleString() ?? '-'} txs</div>
+        <div class="mp-blk-txs">${sizekb}</div>
+        <div class="mp-blk-age">${age}</div>
+      </div>`;
+    }).join('');
+  }
 }
 
 function toggleHalvingInfo() {
@@ -555,6 +581,82 @@ function toggleHalvingInfo() {
   const arrow = document.getElementById('mp-acc-arrow');
   const open = body.classList.toggle('open');
   if (arrow) arrow.style.transform = open ? 'rotate(90deg)' : '';
+}
+
+// ── 외환 시장 ─────────────────────────────
+let _fxCacheAt = 0;
+async function loadFxRates(force = false) {
+  if (!force && Date.now() - _fxCacheAt < 300000) return;
+  const loading = document.getElementById('fx-loading');
+  const grid    = document.getElementById('fx-grid');
+  const updated = document.getElementById('fx-updated');
+  if (!grid) return;
+  try {
+    const res = await fetch('https://cdn.jsdelivr.net/gh/fawazahmed0/exchange-api@1/latest/currencies/usd.json');
+    if (!res.ok) throw new Error();
+    const d = await res.json();
+    const pairs = [
+      { pair: 'USD/KRW', val: d.usd.krw, fmt: v => '₩' + Math.round(v).toLocaleString() },
+      { pair: 'USD/JPY', val: d.usd.jpy, fmt: v => '¥' + v.toFixed(2) },
+      { pair: 'USD/EUR', val: d.usd.eur, fmt: v => '€' + v.toFixed(4) },
+      { pair: 'USD/CNY', val: d.usd.cny, fmt: v => '¥' + v.toFixed(4) },
+      { pair: 'USD/GBP', val: d.usd.gbp, fmt: v => '£' + v.toFixed(4) },
+      { pair: 'USD/SGD', val: d.usd.sgd, fmt: v => 'S$' + v.toFixed(4) },
+    ];
+    grid.innerHTML = pairs.map(p => `
+      <div class="fx-card">
+        <div class="fx-pair">${p.pair}</div>
+        <div class="fx-rate">${p.val ? p.fmt(p.val) : '-'}</div>
+      </div>`).join('');
+    if (loading) loading.style.display = 'none';
+    grid.style.display = '';
+    _fxCacheAt = Date.now();
+    if (updated) {
+      const t = new Date();
+      updated.textContent = `${t.getHours().toString().padStart(2,'0')}:${t.getMinutes().toString().padStart(2,'0')} 업데이트`;
+    }
+  } catch(_) {
+    if (loading) loading.textContent = '불러오기 실패';
+  }
+}
+
+// ── 시장 위험지표 ─────────────────────────────
+let _indicatorCacheAt = 0;
+async function loadMarketIndicators(force = false) {
+  if (!force && Date.now() - _indicatorCacheAt < 300000) return;
+  const fngLoading = document.getElementById('fng-loading');
+  const fngContent = document.getElementById('fng-content');
+  try {
+    const [fngRes, domRes] = await Promise.allSettled([
+      fetch('https://api.alternative.me/fng/').then(r => r.json()),
+      fetch('https://api.coingecko.com/api/v3/global').then(r => r.json()),
+    ]);
+    if (fngRes.status === 'fulfilled') {
+      const fng = fngRes.value.data[0];
+      const val = parseInt(fng.value);
+      const labels = ['극도 공포','공포','중립','탐욕','극도 탐욕'];
+      const idx = val < 20 ? 0 : val < 40 ? 1 : val < 60 ? 2 : val < 80 ? 3 : 4;
+      const colors = ['var(--green)','#6ad040','#ffd700','#f97316','var(--red)'];
+      const numEl = document.getElementById('fng-num');
+      const lblEl = document.getElementById('fng-lbl');
+      const subEl = document.getElementById('fng-sub');
+      const needleEl = document.getElementById('fng-needle');
+      if (numEl) { numEl.textContent = val; numEl.style.color = colors[idx]; }
+      if (lblEl) { lblEl.textContent = labels[idx]; lblEl.style.color = colors[idx]; }
+      if (subEl) subEl.textContent = fng.value_classification + ' · ' + new Date(fng.timestamp * 1000).toLocaleDateString('ko-KR');
+      if (needleEl) needleEl.style.left = val + '%';
+      if (fngLoading) fngLoading.style.display = 'none';
+      if (fngContent) fngContent.style.display = '';
+    }
+    if (domRes.status === 'fulfilled') {
+      const btcDom = domRes.value.data?.market_cap_percentage?.btc;
+      const domEl = document.getElementById('btc-dom');
+      if (domEl && btcDom) domEl.textContent = btcDom.toFixed(1) + '%';
+    }
+    _indicatorCacheAt = Date.now();
+  } catch(_) {
+    if (fngLoading) fngLoading.textContent = '불러오기 실패';
+  }
 }
 
 // ── Top Assets ─────────────────────────────
