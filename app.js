@@ -251,7 +251,6 @@ function renderCapture(data) {
     { l: '총 수익률',           v: sgn(last.cumPct, 2) + '%' },
     { l: '총 수익 (USDT)',      v: (last.cumPnl >= 0 ? '+$' : '-$') + Math.abs(last.cumPnl).toFixed(2) },
     { l: '역대 최고 하루 수익', v: '+$' + best.toFixed(2) },
-    { l: '역대 최악 하루 손실', v: '-$' + Math.abs(worst).toFixed(2) },
     { l: '투자 기간',           v: days + ' Days' },
   ].map(it => `<div class="cap-card"><div class="cap-card-lbl">${it.l}</div><div class="cap-card-val">${it.v}</div>${it.sub ? `<div style="font-size:10px;color:rgba(255,255,255,.3);margin-top:3px">${it.sub}</div>` : ''}</div>`).join('');
 }
