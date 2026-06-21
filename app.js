@@ -348,7 +348,7 @@ function renderSettingsForm() {
 
 // ── 탭 ───────────────────────────────────────
 // 순서 = 하단바 버튼 순서와 일치: 대시보드|기록|계산기|멤풀|유틸리티 (이후는 하단바 없음)
-const TABS = ['dashboard','log','calc','mempool','utility','settings','capture','bip39','monthly'];
+const TABS = ['dashboard','log','calc','mempool','utility','settings','capture','bip39','monthly','premium'];
 function showTab(name) {
   if (name !== currentTab) { prevTab = currentTab; currentTab = name; }
   TABS.forEach((t, i) => {
@@ -382,7 +382,7 @@ function toggleAccordion(id) {
 function updateTopBar() {
   const btn = document.querySelector('.top-bar-settings');
   if (!btn) return;
-  if (currentTab === 'settings' || currentTab === 'capture' || currentTab === 'bip39' || currentTab === 'monthly') {
+  if (currentTab === 'settings' || currentTab === 'capture' || currentTab === 'bip39' || currentTab === 'monthly' || currentTab === 'premium') {
     btn.setAttribute('aria-label', '뒤로');
     btn.innerHTML = BACK_SVG;
     btn.onclick = () => showTab(prevTab || 'dashboard');
@@ -489,6 +489,7 @@ function updatePremiumDisplay() {
 
   set('dash-kimchi', fmtPct, color);
   set('prem-pct', fmtPct, color);
+  set('calc-prem-badge', fmtPct, color);
   set('prem-diff-krw', (premDiff >= 0 ? '+' : '') + Math.round(premDiff).toLocaleString() + ' KRW', color);
   set('prem-diff-usd', (premDiff >= 0 ? '+' : '') + Math.round(premDiff / realFx).toLocaleString() + ' USD');
   set('prem-kr-krw', Math.round(calcKrwBtcPrice).toLocaleString() + ' KRW');
@@ -496,6 +497,14 @@ function updatePremiumDisplay() {
   set('prem-os-krw', overseasKrw.toLocaleString() + ' KRW');
   set('prem-os-usd', Math.round(calcBtcPrice).toLocaleString() + ' USD');
   set('prem-fx', '₩' + Math.round(realFx).toLocaleString());
+  // USD/KRW 대시보드 — API 실패 시 S.fx(USDT/KRW) 폴백
+  const usdKrwEl = document.getElementById('usd-krw');
+  if (usdKrwEl && (!realUsdKrw || usdKrwEl.textContent === '-')) {
+    usdKrwEl.textContent = '₩' + Math.round(realFx).toLocaleString();
+  }
+  // 프리미엄 탭 환율 칩
+  set('prem-usdt-krw', '₩' + fx.toLocaleString());
+  set('prem-usd-krw', '₩' + Math.round(realFx).toLocaleString());
 }
 
 function updateSatsPerUsd() {

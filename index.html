@@ -241,6 +241,14 @@ input:focus{border-color:var(--accent)}
 .ta-price{font-size:13px;font-weight:600;color:var(--text)}
 .ta-mcap{font-size:11px;color:var(--text3);margin-top:1px}
 .ta-chg{font-size:12px;font-weight:500;min-width:52px;text-align:right;flex-shrink:0}
+/* ── 반감기 테이블 ── */
+.halving-tbl{width:100%;border-collapse:collapse;font-size:12px}
+.halving-tbl th{color:var(--text3);font-weight:400;font-size:11px;letter-spacing:.04em;padding:6px 8px;border-bottom:1px solid var(--border);text-align:right}
+.halving-tbl th:first-child,.halving-tbl td:first-child{text-align:center}
+.halving-tbl td{padding:7px 8px;border-bottom:1px solid var(--border);color:var(--text2);text-align:right}
+.halving-tbl tr:last-child td{border-bottom:none}
+.halving-tbl tr.hl-cur td{color:var(--green);font-weight:600;background:var(--green-dim)}
+.halving-tbl tr.hl-next td{color:var(--accent);font-weight:500}
 /* ── 멤풀 탭 ── */
 .mp-section-title{font-size:11px;color:var(--text3);letter-spacing:.08em;text-transform:uppercase;font-weight:500;padding:0 0 8px}
 .mp-block-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:1.25rem 1.5rem;margin-bottom:1rem;text-align:center}
@@ -417,7 +425,13 @@ input:focus{border-color:var(--accent)}
           <div style="font-size:11px;color:var(--text3)">BTC $<span id="calc-btc-price">-</span> · ₩<span id="calc-rate">-</span></div>
           <div class="sats-line">1 USD = <span id="calc-sats-per-usd">-</span> Sats</div>
         </div>
-        <span onclick="refreshCalcPrices()" style="font-size:12px;color:var(--accent);cursor:pointer">↻ 새로고침</span>
+        <div style="display:flex;align-items:center;gap:8px">
+          <button onclick="showTab('premium')" style="background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:6px 10px;cursor:pointer;color:var(--text2);font-size:12px;font-family:var(--font);display:flex;align-items:center;gap:5px">
+            <span id="calc-prem-badge" style="font-size:13px;font-weight:700">-</span>
+            <span style="color:var(--text3)">프리미엄</span>
+          </button>
+          <span onclick="refreshCalcPrices()" style="font-size:12px;color:var(--accent);cursor:pointer">↻</span>
+        </div>
       </div>
 
       <!-- BTC -->
@@ -468,35 +482,6 @@ input:focus{border-color:var(--accent)}
         <div class="cv-sub">* 1BTC = $<span id="calc-btc-usd-lbl">-</span></div>
       </div>
 
-      <!-- 김치 프리미엄 -->
-      <div style="margin-top:1.75rem">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.75rem">
-          <span style="font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--text3)">김치 프리미엄</span>
-          <span onclick="refreshCalcPrices()" style="font-size:12px;color:var(--accent);cursor:pointer">↻ 새로고침</span>
-        </div>
-        <div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:1rem 1.25rem">
-          <div style="text-align:center;padding:0.5rem 0 1.25rem">
-            <div id="prem-pct" style="font-size:40px;font-weight:700;line-height:1">-</div>
-            <div style="font-size:12px;color:var(--text3);margin-top:6px">한국 프리미엄</div>
-          </div>
-          <div class="prem-row">
-            <span class="prem-lbl">프리미엄 가격</span>
-            <div class="prem-right"><span id="prem-diff-krw" class="prem-val">-</span><span id="prem-diff-usd" class="prem-sub">-</span></div>
-          </div>
-          <div class="prem-row">
-            <span class="prem-lbl">한국 가격 (업비트)</span>
-            <div class="prem-right"><span id="prem-kr-krw" class="prem-val">-</span><span id="prem-kr-usd" class="prem-sub">-</span></div>
-          </div>
-          <div class="prem-row">
-            <span class="prem-lbl">해외 가격</span>
-            <div class="prem-right"><span id="prem-os-krw" class="prem-val">-</span><span id="prem-os-usd" class="prem-sub">-</span></div>
-          </div>
-          <div class="prem-row" style="border-bottom:none">
-            <span class="prem-lbl">USD/KRW 환율</span>
-            <div class="prem-right"><span id="prem-fx" class="prem-val">-</span><span class="prem-sub">실시간</span></div>
-          </div>
-        </div>
-      </div>
     </div>
 
     <!-- 하단 고정 입력창 (1행 압축) -->
@@ -520,6 +505,45 @@ input:focus{border-color:var(--accent)}
           <div class="unit-option" onclick="setUnit('Sats')">Sats</div>
         </div>
       </div>
+    </div>
+  </div>
+
+  <!-- 김치 프리미엄 -->
+  <div id="tab-premium" class="hidden">
+    <div class="page-header">
+      <div class="page-title">김치 프리미엄</div>
+      <div class="page-sub">한국 거래소 가격 프리미엄</div>
+    </div>
+    <div style="text-align:center;padding:1.5rem 0 2rem">
+      <div id="prem-pct" style="font-size:56px;font-weight:700;line-height:1;letter-spacing:-.02em">-</div>
+      <div style="font-size:13px;color:var(--text3);margin-top:8px">한국 프리미엄</div>
+    </div>
+    <div class="card" style="padding:0;overflow:hidden">
+      <div class="prem-row" style="padding:12px 1.25rem">
+        <span class="prem-lbl">프리미엄 가격</span>
+        <div class="prem-right"><span id="prem-diff-krw" class="prem-val">-</span><span id="prem-diff-usd" class="prem-sub">-</span></div>
+      </div>
+      <div class="prem-row" style="padding:12px 1.25rem">
+        <span class="prem-lbl">한국 가격 (업비트)</span>
+        <div class="prem-right"><span id="prem-kr-krw" class="prem-val">-</span><span id="prem-kr-usd" class="prem-sub">-</span></div>
+      </div>
+      <div class="prem-row" style="padding:12px 1.25rem">
+        <span class="prem-lbl">해외 가격 (바이낸스)</span>
+        <div class="prem-right"><span id="prem-os-krw" class="prem-val">-</span><span id="prem-os-usd" class="prem-sub">-</span></div>
+      </div>
+      <div class="prem-row" style="padding:12px 1.25rem;border-bottom:none">
+        <span class="prem-lbl">USD/KRW 환율</span>
+        <div class="prem-right"><span id="prem-fx" class="prem-val">-</span><span class="prem-sub">실시간</span></div>
+      </div>
+    </div>
+    <div style="margin-top:1rem">
+      <div class="rate-strip">
+        <div class="rate-chip"><span class="rate-lbl">USDT/KRW</span><span id="prem-usdt-krw" class="rate-val">-</span></div>
+        <div class="rate-chip"><span class="rate-lbl">USD/KRW</span><span id="prem-usd-krw" class="rate-val">-</span></div>
+      </div>
+    </div>
+    <div style="text-align:center;margin-top:1rem">
+      <span onclick="refreshCalcPrices()" style="font-size:12px;color:var(--accent);cursor:pointer">↻ 새로고침</span>
     </div>
   </div>
 
@@ -582,27 +606,50 @@ input:focus{border-color:var(--accent)}
         <span class="mp-acc-arrow" id="mp-acc-arrow">›</span>
       </div>
       <div class="mp-acc-body" id="mp-acc-body">
-        <div class="mp-acc-inner">
-          <div class="mp-info-row">
-            <span class="mp-info-icon">₿</span>
-            <span class="mp-info-text"><span class="mp-info-bold">반감기(Halving)</span>는 약 4년마다 비트코인 채굴 보상이 절반으로 줄어드는 이벤트입니다.</span>
-          </div>
-          <div class="mp-info-row">
-            <span class="mp-info-icon">⛏</span>
-            <span class="mp-info-text">현재 블록당 보상은 <span class="mp-info-bold" id="mp-current-reward">3.125 BTC</span>입니다. 다음 반감기 후에는 1.5625 BTC가 됩니다.</span>
-          </div>
-          <div class="mp-info-row">
-            <span class="mp-info-icon">📦</span>
-            <span class="mp-info-text">반감기는 정확히 <span class="mp-info-bold">210,000 블록</span>마다 발생합니다. 블록 생성 간격은 평균 10분입니다.</span>
-          </div>
-          <div class="mp-info-row">
-            <span class="mp-info-icon">🔒</span>
-            <span class="mp-info-text">비트코인의 총 발행량은 <span class="mp-info-bold">2,100만 개</span>로 고정되어 있습니다. 2140년경 모두 채굴됩니다.</span>
-          </div>
-          <div class="mp-info-row">
-            <span class="mp-info-icon">📈</span>
-            <span class="mp-info-text">역사적으로 반감기 이후 공급 감소로 인해 장기적인 가격 상승이 나타나는 경향이 있습니다.</span>
-          </div>
+        <div style="padding:10px 0 2px;font-size:12px;color:var(--text3);line-height:1.6">
+          반감기는 210,000블록(약 4년)마다 채굴 보상이 절반이 되는 이벤트입니다. 총 발행량 2,100만 BTC는 고정이며 2140년경 소진됩니다.
+          <span style="color:var(--green)">■ 현재</span> &nbsp;<span style="color:var(--accent)">■ 다음</span>
+        </div>
+        <div style="overflow-x:auto;margin-top:10px">
+          <table class="halving-tbl">
+            <thead><tr><th>#</th><th>날짜</th><th>블록 높이</th><th>보상 (BTC)</th></tr></thead>
+            <tbody>
+              <tr><td>1</td><td>2009.01.03</td><td>0</td><td>50.0</td></tr>
+              <tr><td>2</td><td>2012.11.29</td><td>210,000</td><td>25.0</td></tr>
+              <tr><td>3</td><td>2016.07.10</td><td>420,000</td><td>12.5</td></tr>
+              <tr><td>4</td><td>2020.05.12</td><td>630,000</td><td>6.25</td></tr>
+              <tr class="hl-cur"><td>5</td><td>2024.04.20</td><td>840,000</td><td>3.125</td></tr>
+              <tr class="hl-next"><td>6</td><td>~2028</td><td>1,050,000</td><td>1.5625</td></tr>
+              <tr><td>7</td><td>~2032</td><td>1,260,000</td><td>0.78125</td></tr>
+              <tr><td>8</td><td>~2036</td><td>1,470,000</td><td>0.390625</td></tr>
+              <tr><td>9</td><td>~2040</td><td>1,680,000</td><td>0.1953125</td></tr>
+              <tr><td>10</td><td>~2044</td><td>1,890,000</td><td>0.09765625</td></tr>
+              <tr><td>11</td><td>~2048</td><td>2,100,000</td><td>0.04882813</td></tr>
+              <tr><td>12</td><td>~2052</td><td>2,310,000</td><td>0.02441406</td></tr>
+              <tr><td>13</td><td>~2056</td><td>2,520,000</td><td>0.01220703</td></tr>
+              <tr><td>14</td><td>~2060</td><td>2,730,000</td><td>0.00610352</td></tr>
+              <tr><td>15</td><td>~2064</td><td>2,940,000</td><td>0.00305176</td></tr>
+              <tr><td>16</td><td>~2068</td><td>3,150,000</td><td>0.00152588</td></tr>
+              <tr><td>17</td><td>~2072</td><td>3,360,000</td><td>0.00076294</td></tr>
+              <tr><td>18</td><td>~2076</td><td>3,570,000</td><td>0.00038147</td></tr>
+              <tr><td>19</td><td>~2080</td><td>3,780,000</td><td>0.00019073</td></tr>
+              <tr><td>20</td><td>~2084</td><td>3,990,000</td><td>0.00009537</td></tr>
+              <tr><td>21</td><td>~2088</td><td>4,200,000</td><td>0.00004768</td></tr>
+              <tr><td>22</td><td>~2092</td><td>4,410,000</td><td>0.00002384</td></tr>
+              <tr><td>23</td><td>~2096</td><td>4,620,000</td><td>0.00001192</td></tr>
+              <tr><td>24</td><td>~2100</td><td>4,830,000</td><td>0.00000596</td></tr>
+              <tr><td>25</td><td>~2104</td><td>5,040,000</td><td>0.00000298</td></tr>
+              <tr><td>26</td><td>~2108</td><td>5,250,000</td><td>0.00000149</td></tr>
+              <tr><td>27</td><td>~2112</td><td>5,460,000</td><td>0.00000075</td></tr>
+              <tr><td>28</td><td>~2116</td><td>5,670,000</td><td>0.00000037</td></tr>
+              <tr><td>29</td><td>~2120</td><td>5,880,000</td><td>0.00000019</td></tr>
+              <tr><td>30</td><td>~2124</td><td>6,090,000</td><td>0.00000009</td></tr>
+              <tr><td>31</td><td>~2128</td><td>6,300,000</td><td>0.00000005</td></tr>
+              <tr><td>32</td><td>~2132</td><td>6,510,000</td><td>0.00000002</td></tr>
+              <tr><td>33</td><td>~2136</td><td>6,720,000</td><td>0.00000001</td></tr>
+              <tr><td>34</td><td>~2140</td><td>6,930,000</td><td>0.00000001</td></tr>
+            </tbody>
+          </table>
         </div>
       </div>
     </div>
