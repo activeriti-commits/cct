@@ -308,8 +308,8 @@ function renderSettingsForm() {
 }
 
 // ── 탭 ───────────────────────────────────────
-// 순서 = 하단바 버튼 순서와 일치: 대시보드|기록|계산기|결산|캡처|설정
-const TABS = ['dashboard','log','calc','monthly','capture','settings'];
+// 순서 = 하단바 버튼 순서와 일치: 대시보드|캡처|계산기|기록|결산|설정
+const TABS = ['dashboard','capture','calc','log','monthly','settings'];
 function showTab(name) {
   if (name !== currentTab) { prevTab = currentTab; currentTab = name; }
   TABS.forEach((t, i) => {
@@ -321,16 +321,19 @@ function showTab(name) {
   updateTopBar();
 }
 
+const GEAR_SVG = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>`;
+const BACK_SVG = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>`;
+
 function updateTopBar() {
   const btn = document.querySelector('.top-bar-settings');
   if (!btn) return;
   if (currentTab === 'settings') {
     btn.setAttribute('aria-label', '뒤로');
-    btn.innerHTML = `<svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 4L6 10l6 6"/></svg>`;
+    btn.innerHTML = BACK_SVG;
     btn.onclick = () => showTab(prevTab || 'dashboard');
   } else {
     btn.setAttribute('aria-label', '설정');
-    btn.innerHTML = `<svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="9" cy="9" r="2.5"/><path d="M9 1v2M9 15v2M1 9h2M15 9h2M3.22 3.22l1.42 1.42M13.36 13.36l1.42 1.42M3.22 14.78l1.42-1.42M13.36 4.64l1.42-1.42"/></svg>`;
+    btn.innerHTML = GEAR_SVG;
     btn.onclick = () => showTab('settings');
   }
 }

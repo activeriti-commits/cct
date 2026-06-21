@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html>
+<body>
+<canvas id="c192" width="192" height="192"></canvas>
+<canvas id="c512" width="512" height="512"></canvas>
+<script>
+function drawIcon(size) {
+  const canvas = document.createElement('canvas');
+  canvas.width = size; canvas.height = size;
+  const ctx = canvas.getContext('2d');
+  const r = size * 0.12;
+  ctx.beginPath();
+  ctx.moveTo(r, 0);
+  ctx.lineTo(size - r, 0);
+  ctx.quadraticCurveTo(size, 0, size, r);
+  ctx.lineTo(size, size - r);
+  ctx.quadraticCurveTo(size, size, size - r, size);
+  ctx.lineTo(r, size);
+  ctx.quadraticCurveTo(0, size, 0, size - r);
+  ctx.lineTo(0, r);
+  ctx.quadraticCurveTo(0, 0, r, 0);
+  ctx.closePath();
+  const grad = ctx.createLinearGradient(0, 0, size, size);
+  grad.addColorStop(0, '#1a2033');
+  grad.addColorStop(1, '#0f1117');
+  ctx.fillStyle = grad;
+  ctx.fill();
+  ctx.font = `bold ${size * 0.42}px -apple-system, sans-serif`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  const tg = ctx.createLinearGradient(size*0.2, size*0.3, size*0.8, size*0.7);
+  tg.addColorStop(0, '#ffffff');
+  tg.addColorStop(1, '#8892a4');
+  ctx.fillStyle = tg;
+  ctx.fillText('CCT', size / 2, size / 2);
+  return canvas.toDataURL('image/png');
+}
+const a192 = document.createElement('a');
+a192.href = drawIcon(192);
+a192.download = 'icon-192.png';
+a192.textContent = '192px 다운로드';
+document.body.appendChild(a192);
+document.body.appendChild(document.createElement('br'));
+const a512 = document.createElement('a');
+a512.href = drawIcon(512);
+a512.download = 'icon-512.png';
+a512.textContent = '512px 다운로드';
+document.body.appendChild(a512);
+</script>
+</body>
+</html>
