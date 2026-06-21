@@ -81,6 +81,8 @@ async function doLogout() {
 
 // ── 시세 ─────────────────────────────────────
 let calcBtcPrice = 0;
+let calcKrwBtcPrice = 0;
+let realUsdKrw = 0;
 
 async function fetchFx() {
   try {
@@ -96,16 +98,17 @@ async function fetchFx() {
 }
 
 async function fetchMarketPrices() {
+  const [btcRes, krwRes, fxRes] = await Promise.allSettled([
+    (S.overseas === 'coinbase'
+      ? fetch('https://api.coinbase.com/v2/prices/BTC-USD/spot').then(r=>r.json()).then(d=>({btc:parseFloat(d.data.amount)}))
+      : fetch('https://api.binance.com/api/v3/ticker/price?symbol=BTCUSDT').then(r=>r.json()).then(d=>({btc:parseFloat(d.price)}))),
+    fetch('https://api.upbit.com/v1/ticker?markets=KRW-BTC').then(r=>r.json()).then(d=>({krwBtc:d[0].trade_price})),
+    fetch('https://cdn.jsdelivr.net/gh/fawazahmed0/exchange-api@1/latest/currencies/usd/krw.json').then(r=>r.json()).then(d=>({usdKrw:d.krw}))
+  ]);
   const r = {};
-  try {
-    if (S.overseas === 'coinbase') {
-      const res = await fetch('https://api.coinbase.com/v2/prices/BTC-USD/spot');
-      if (res.ok) { const d = await res.json(); r.btc = parseFloat(d.data.amount); }
-    } else {
-      const res = await fetch('https://api.binance.com/api/v3/ticker/price?symbol=BTCUSDT');
-      if (res.ok) { const d = await res.json(); r.btc = parseFloat(d.price); }
-    }
-  } catch(_) {}
+  if (btcRes.status==='fulfilled') Object.assign(r, btcRes.value);
+  if (krwRes.status==='fulfilled') Object.assign(r, krwRes.value);
+  if (fxRes.status==='fulfilled') Object.assign(r, fxRes.value);
   return r;
 }
 
@@ -132,6 +135,15 @@ async function loadFromDB() {
       const el = document.getElementById('btc-price');
       if (el) el.textContent = '$' + Math.round(p.btc).toLocaleString();
     }
+    if (p.krwBtc) calcKrwBtcPrice = p.krwBtc;
+    if (p.usdKrw) {
+      realUsdKrw = p.usdKrw;
+      const el = document.getElementById('usd-krw');
+      if (el) el.textContent = '₩' + Math.round(p.usdKrw).toLocaleString();
+    }
+    const usdt = document.getElementById('usdt-krw');
+    if (usdt && S.fx) usdt.textContent = '₩' + S.fx.toLocaleString();
+    updatePremiumDisplay();
   });
 }
 
@@ -190,6 +202,7 @@ function render() {
   document.getElementById('dash-sub').textContent = `시작일 ${S.startDate} · 초기 시드 $${S.seed.toLocaleString()}`;
   const usdt = document.getElementById('usdt-krw');
   if (usdt) usdt.textContent = '₩' + S.fx.toLocaleString();
+  if (realUsdKrw) { const el = document.getElementById('usd-krw'); if (el) el.textContent = '₩' + Math.round(realUsdKrw).toLocaleString(); }
 
   document.getElementById('r1').innerHTML =
     M('현재 총자산', '$' + last.asset.toFixed(2), 'lg') +
@@ -438,6 +451,36 @@ function resetAll() {
   toast('초기화됐어요', 'err');
 }
 
+// ── 김치 프리미엄 ─────────────────────────────
+function updatePremiumDisplay() {
+  if (!calcBtcPrice || !calcKrwBtcPrice) return;
+  const fx = S.fx;
+  const overseasKrw = Math.round(calcBtcPrice * fx);
+  const premDiff = calcKrwBtcPrice - overseasKrw;
+  const prem = (premDiff / overseasKrw) * 100;
+  const pos = prem >= 0;
+  const fmtPct = (pos ? '+' : '') + prem.toFixed(2) + '%';
+  const color = pos ? 'var(--green)' : 'var(--red)';
+  const realFx = realUsdKrw || fx;
+
+  const set = (id, txt, col) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.textContent = txt;
+    if (col !== undefined) el.style.color = col;
+  };
+
+  set('dash-kimchi', fmtPct, color);
+  set('prem-pct', fmtPct, color);
+  set('prem-diff-krw', (premDiff >= 0 ? '+' : '') + Math.round(premDiff).toLocaleString() + ' KRW', color);
+  set('prem-diff-usd', (premDiff >= 0 ? '+' : '') + Math.round(premDiff / realFx).toLocaleString() + ' USD');
+  set('prem-kr-krw', Math.round(calcKrwBtcPrice).toLocaleString() + ' KRW');
+  set('prem-kr-usd', Math.round(calcKrwBtcPrice / realFx).toLocaleString() + ' USD');
+  set('prem-os-krw', overseasKrw.toLocaleString() + ' KRW');
+  set('prem-os-usd', Math.round(calcBtcPrice).toLocaleString() + ' USD');
+  set('prem-fx', '₩' + Math.round(realFx).toLocaleString());
+}
+
 // ── 테마 ─────────────────────────────────────
 function applyTheme(theme) {
   const actual = theme === 'system'
@@ -465,10 +508,11 @@ async function refreshCalcPrices() {
     s('calc-rate',        S.fx > 0 ? S.fx.toLocaleString() : '-');
     s('calc-rate2',       S.fx > 0 ? S.fx.toLocaleString() : '-');
     s('calc-btc-price',   calcBtcPrice > 0 ? Math.round(calcBtcPrice).toLocaleString() : '-');
-    s('calc-btc-krw-lbl', calcBtcPrice > 0 ? '₩' + Math.round(calcBtcPrice * S.fx).toLocaleString() : '-');
+    s('calc-btc-krw-lbl', calcKrwBtcPrice > 0 ? '₩' + Math.round(calcKrwBtcPrice).toLocaleString()
+                          : calcBtcPrice > 0 ? '₩' + Math.round(calcBtcPrice * S.fx).toLocaleString() : '-');
     s('calc-btc-usd-lbl', calcBtcPrice > 0 ? Math.round(calcBtcPrice).toLocaleString() : '-');
     s('calc-rate-bar',    calcBtcPrice > 0
-      ? `1BTC = $${Math.round(calcBtcPrice).toLocaleString()} · ₩${Math.round(calcBtcPrice * S.fx).toLocaleString()}`
+      ? `해외 $${Math.round(calcBtcPrice).toLocaleString()} · 업비트 ₩${calcKrwBtcPrice > 0 ? Math.round(calcKrwBtcPrice).toLocaleString() : Math.round(calcBtcPrice * S.fx).toLocaleString()}`
       : '시세 로딩 중...');
   };
   showCurrent();
@@ -477,6 +521,12 @@ async function refreshCalcPrices() {
   if (Date.now() - _btcCacheAt > 60000) {
     const p = await fetchMarketPrices();
     if (p.btc) calcBtcPrice = p.btc;
+    if (p.krwBtc) calcKrwBtcPrice = p.krwBtc;
+    if (p.usdKrw) {
+      realUsdKrw = p.usdKrw;
+      const el = document.getElementById('usd-krw');
+      if (el) el.textContent = '₩' + Math.round(p.usdKrw).toLocaleString();
+    }
     if (S.fxAuto) {
       try {
         if (S.domestic === 'upbit') {
@@ -490,6 +540,7 @@ async function refreshCalcPrices() {
     }
     _btcCacheAt = Date.now();
     showCurrent();
+    updatePremiumDisplay();
   }
 
   const inp = document.getElementById('calc-input');
@@ -512,13 +563,12 @@ function calcConvert(raw) {
   ['btc','sats','krw','usd'].forEach(hideRow);
   const s = (id, t) => { const el = document.getElementById(id); if(el) el.textContent = t; };
   if (!val) { ['calc-btc','calc-sats','calc-krw','calc-usd'].forEach(id => s(id, '-')); return; }
-  const premium = parseFloat(document.getElementById('calc-premium')?.value || 0) / 100;
   const usd = toUSD(val, calcUnit);
   const btc = calcBtcPrice > 0 ? usd / calcBtcPrice : 0;
   const hasBtc = calcBtcPrice > 0;
   s('calc-btc',  hasBtc ? btc.toFixed(8) : '-');
   s('calc-sats', hasBtc ? Math.round(btc * 100000000).toLocaleString() : '-');
-  s('calc-krw',  '₩' + Math.round(usd * S.fx * (1 + premium)).toLocaleString());
+  s('calc-krw',  '₩' + Math.round(usd * S.fx).toLocaleString());
   s('calc-usd',  '$' + usd.toFixed(2));
 }
 
@@ -595,13 +645,6 @@ function copyCalc(id) {
     .then(() => toast('복사됐어요'));
 }
 
-function adjPremium(delta) {
-  const el = document.getElementById('calc-premium');
-  if (!el) return;
-  el.value = Math.round((parseFloat(el.value || 0) + delta) * 10) / 10;
-  const inp = document.getElementById('calc-input');
-  if (inp && inp.value) calcConvert(inp.value);
-}
 
 document.addEventListener('click', e => {
   const menu = document.getElementById('unit-menu');

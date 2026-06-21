@@ -210,13 +210,20 @@ input:focus{border-color:var(--accent)}
 .cv-copy{background:none;border:1px solid var(--border);border-radius:8px;padding:8px 12px;cursor:pointer;color:var(--text3);font-size:14px;flex-shrink:0;line-height:1;min-width:38px;min-height:38px}
 .cv-copy:active{background:var(--bg3)}
 .cv-sub{font-size:11px;color:var(--text3);margin-top:5px}
-.cv-premium-lbl{font-size:12px;color:var(--text2);font-weight:500}
+/* ── 환율 스트립 ── */
+.rate-strip{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:1.25rem}
+.rate-chip{background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:7px 12px;font-size:12px;display:flex;align-items:center;gap:6px}
+.rate-lbl{color:var(--text3)}
+.rate-val{color:var(--text);font-weight:500}
+/* ── 김치 프리미엄 ── */
+.prem-row{display:flex;justify-content:space-between;align-items:flex-start;padding:10px 0;border-bottom:1px solid var(--border)}
+.prem-lbl{font-size:13px;color:var(--text2);padding-top:2px}
+.prem-right{text-align:right}
+.prem-val{font-size:14px;font-weight:600;color:var(--text);display:block}
+.prem-sub{font-size:11px;color:var(--text3);display:block;margin-top:2px}
 @media(max-width:768px){
   :root{--sidebar:0}
   .cv-num{font-size:20px}
-}
-@media(max-width:360px){
-  .cv-premium-lbl{display:none}
 }
 </style>
 </head>
@@ -267,15 +274,17 @@ input:focus{border-color:var(--accent)}
             <span style="color:var(--text3)">BTC</span>
             <span id="btc-price" style="color:var(--text);font-weight:500">-</span>
           </div>
-          <div style="background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:6px 12px;font-size:12px;display:flex;align-items:center;gap:6px">
-            <span style="color:var(--text3)">USDT</span>
-            <span id="usdt-krw" style="color:var(--text);font-weight:500">-</span>
-          </div>
           <button onclick="showTab('capture')" title="캡처" style="background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:6px 10px;cursor:pointer;color:var(--text2);display:flex;align-items:center">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
           </button>
         </div>
       </div>
+    </div>
+    <!-- 환율 & 김치 프리미엄 스트립 -->
+    <div class="rate-strip">
+      <div class="rate-chip"><span class="rate-lbl">USDT/KRW</span><span id="usdt-krw" class="rate-val">-</span></div>
+      <div class="rate-chip"><span class="rate-lbl">USD/KRW</span><span id="usd-krw" class="rate-val">-</span></div>
+      <div class="rate-chip"><span class="rate-lbl">김치 프리미엄</span><span id="dash-kimchi" class="rate-val">-</span></div>
     </div>
     <div class="g2" id="r1"></div>
     <div class="g2" id="r2"></div>
@@ -404,6 +413,36 @@ input:focus{border-color:var(--accent)}
         </div>
         <div class="cv-sub">* 1BTC = $<span id="calc-btc-usd-lbl">-</span></div>
       </div>
+
+      <!-- 김치 프리미엄 -->
+      <div style="margin-top:1.75rem">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.75rem">
+          <span style="font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--text3)">김치 프리미엄</span>
+          <span onclick="refreshCalcPrices()" style="font-size:12px;color:var(--accent);cursor:pointer">↻ 새로고침</span>
+        </div>
+        <div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:1rem 1.25rem">
+          <div style="text-align:center;padding:0.5rem 0 1.25rem">
+            <div id="prem-pct" style="font-size:40px;font-weight:700;line-height:1">-</div>
+            <div style="font-size:12px;color:var(--text3);margin-top:6px">한국 프리미엄</div>
+          </div>
+          <div class="prem-row">
+            <span class="prem-lbl">프리미엄 가격</span>
+            <div class="prem-right"><span id="prem-diff-krw" class="prem-val">-</span><span id="prem-diff-usd" class="prem-sub">-</span></div>
+          </div>
+          <div class="prem-row">
+            <span class="prem-lbl">한국 가격 (업비트)</span>
+            <div class="prem-right"><span id="prem-kr-krw" class="prem-val">-</span><span id="prem-kr-usd" class="prem-sub">-</span></div>
+          </div>
+          <div class="prem-row">
+            <span class="prem-lbl">해외 가격</span>
+            <div class="prem-right"><span id="prem-os-krw" class="prem-val">-</span><span id="prem-os-usd" class="prem-sub">-</span></div>
+          </div>
+          <div class="prem-row" style="border-bottom:none">
+            <span class="prem-lbl">USD/KRW 환율</span>
+            <div class="prem-right"><span id="prem-fx" class="prem-val">-</span><span class="prem-sub">실시간</span></div>
+          </div>
+        </div>
+      </div>
     </div>
 
     <!-- 하단 고정 입력창 (1행 압축) -->
@@ -413,15 +452,6 @@ input:focus{border-color:var(--accent)}
         inputmode="decimal"
         oninput="calcConvert(this.value)"
         style="flex:1;font-size:16px;padding:6px 10px;border-radius:7px;border:1px solid var(--border);background:var(--bg3);color:var(--text);outline:none;font-family:var(--font);height:36px">
-      <div style="display:flex;align-items:center;gap:4px;flex-shrink:0">
-        <span style="font-size:11px;color:var(--text3)">P%</span>
-        <button onclick="adjPremium(-0.5)" style="background:var(--bg3);border:1px solid var(--border);border-radius:5px;width:28px;height:28px;cursor:pointer;color:var(--text2);font-size:16px;line-height:1;flex-shrink:0">−</button>
-        <input type="number" id="calc-premium" value="0" step="0.1"
-          inputmode="decimal"
-          oninput="calcConvert(document.getElementById('calc-input').value)"
-          style="width:40px;padding:4px 4px;font-size:12px;border-radius:5px;border:1px solid var(--border);background:var(--bg3);color:var(--text);text-align:center;font-family:var(--font);height:28px">
-        <button onclick="adjPremium(0.5)" style="background:var(--bg3);border:1px solid var(--border);border-radius:5px;width:28px;height:28px;cursor:pointer;color:var(--text2);font-size:16px;line-height:1;flex-shrink:0">+</button>
-      </div>
       <div style="position:relative;flex-shrink:0">
         <button onclick="toggleUnitMenu()" id="unit-btn"
           style="background:var(--bg3);border:1px solid var(--border);border-radius:7px;padding:6px 10px;color:var(--text);font-size:13px;font-weight:500;cursor:pointer;font-family:var(--font);display:flex;align-items:center;gap:3px;height:36px">
