@@ -16,10 +16,13 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:1
 .sidebar{display:none}
 
 /* ── 상단 헤더 ── */
-.top-bar{position:fixed;top:0;left:0;right:0;height:var(--top-bar);background:var(--bg2);border-bottom:1px solid var(--border);z-index:100;display:flex;align-items:center;justify-content:space-between;padding:0 1.25rem}
+.top-bar{position:fixed;top:0;left:0;right:0;height:var(--top-bar);background:var(--bg2);border-bottom:1px solid var(--border);z-index:100;display:flex;align-items:center;justify-content:center;padding:0 1.25rem}
+.top-bar-inner{display:flex;align-items:center;justify-content:space-between;width:100%;max-width:680px}
 .top-bar-logo{font-size:18px;font-weight:700;letter-spacing:-.02em;background:linear-gradient(135deg,#fff 0%,#8892a4 100%);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;cursor:pointer;user-select:none}
-.avatar{width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--green));display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;color:#fff;flex-shrink:0}
-.user-name{font-size:12px;color:var(--text2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100px}
+.top-bar-settings{background:none;border:none;color:var(--text3);cursor:pointer;padding:6px;display:flex;align-items:center;transition:color .15s}
+.top-bar-settings:hover{color:var(--text)}
+.avatar{display:none}
+.user-name{font-size:12px;color:var(--text2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:120px}
 
 /* ── 메인 영역 ── */
 .main{margin:0 auto;padding:calc(var(--top-bar) + 1.25rem) 1.25rem calc(var(--bottom-bar) + 1.25rem);max-width:680px;width:100%}
@@ -166,7 +169,7 @@ select.s-inp{width:100%}
 .form-grid{grid-template-columns:1fr}
 
 /* ── 계산기 환산 행 ── */
-.cv-content{padding-bottom:170px}
+.cv-content{padding-bottom:calc(var(--bottom-bar) + 60px)}
 .cv-row{padding:18px 0;border-bottom:1px solid var(--border)}
 .cv-row:last-child{border-bottom:none}
 .cv-label{font-size:15px;font-weight:600;color:var(--text);flex-shrink:0}
@@ -178,7 +181,6 @@ select.s-inp{width:100%}
 @media(max-width:768px){
   :root{--sidebar:0}
   .cv-num{font-size:20px}
-  .cv-content{padding-bottom:calc(var(--bottom-bar) + 130px)}
 }
 @media(max-width:360px){
   .cv-premium-lbl{display:none}
@@ -189,10 +191,18 @@ select.s-inp{width:100%}
 
 <!-- 상단 헤더 -->
 <header class="top-bar">
-  <div class="top-bar-logo" onclick="showTab('dashboard')">CCT</div>
-  <div style="display:flex;align-items:center;gap:8px">
-    <div class="avatar" id="user-avatar">?</div>
-    <div class="user-name" id="user-name">-</div>
+  <div class="top-bar-inner">
+    <div class="top-bar-logo" onclick="showTab('dashboard')">CCT</div>
+    <div style="display:flex;align-items:center;gap:10px">
+      <span class="user-name" id="user-name">-</span>
+      <span id="user-avatar" style="display:none"></span>
+      <button onclick="showTab('settings')" class="top-bar-settings" aria-label="설정">
+        <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.6">
+          <circle cx="9" cy="9" r="2.5"/>
+          <path d="M9 1v2M9 15v2M1 9h2M15 9h2M3.22 3.22l1.42 1.42M13.36 13.36l1.42 1.42M3.22 14.78l1.42-1.42M13.36 4.64l1.42-1.42"/>
+        </svg>
+      </button>
+    </div>
   </div>
 </header>
 
@@ -348,44 +358,36 @@ select.s-inp{width:100%}
       </div>
     </div>
 
-    <!-- 하단 고정 입력창 -->
-    <div style="position:fixed;bottom:var(--bottom-bar,0);left:var(--sidebar,0);right:0;background:var(--bg2);border-top:1px solid var(--border);z-index:50">
-      <!-- 1행: 입력 + 단위 -->
-      <div style="display:flex;align-items:center;gap:10px;padding:12px 1rem 6px">
-        <button onclick="clearCalc()" style="background:none;border:none;color:var(--text3);font-size:22px;cursor:pointer;padding:4px 6px;line-height:1;flex-shrink:0;min-height:44px">✕</button>
-        <input type="number" id="calc-input" placeholder="금액 입력" step="any"
-          inputmode="decimal"
-          oninput="calcConvert(this.value)"
-          style="flex:1;font-size:20px;padding:10px 12px;border-radius:8px;border:1px solid var(--border);background:var(--bg3);color:var(--text);outline:none;font-family:var(--font);min-height:44px">
-        <div style="position:relative;flex-shrink:0">
-          <button onclick="toggleUnitMenu()" id="unit-btn"
-            style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:10px 14px;color:var(--text);font-size:14px;font-weight:500;cursor:pointer;font-family:var(--font);display:flex;align-items:center;gap:4px;min-height:44px">
-            <span id="unit-label">BTC</span>
-            <span style="font-size:10px;color:var(--text3)">▾</span>
-          </button>
-          <div id="unit-menu" style="display:none;position:absolute;bottom:calc(100% + 6px);right:0;background:var(--bg2);border:1px solid var(--border);border-radius:10px;overflow:hidden;min-width:120px;box-shadow:0 8px 24px rgba(0,0,0,.4)">
-            <div style="font-size:11px;color:var(--text3);text-align:center;border-bottom:1px solid var(--border);padding:8px;letter-spacing:.06em">단위 설정</div>
-            <div class="unit-option active" onclick="setUnit('BTC')">BTC ✓</div>
-            <div class="unit-option" onclick="setUnit('KRW')">KRW</div>
-            <div class="unit-option" onclick="setUnit('USD')">USD</div>
-            <div class="unit-option" onclick="setUnit('Sats')">Sats</div>
-          </div>
-        </div>
-      </div>
-      <!-- 2행: 프리미엄 -->
-      <div style="display:flex;align-items:center;gap:8px;padding:0 1rem 8px">
-        <span class="cv-premium-lbl">Premium</span>
-        <span title="국내 거래소 프리미엄 %" style="font-size:12px;color:var(--text3);cursor:default">ⓘ</span>
-        <span style="font-size:12px;color:var(--text3)">P(%):</span>
+    <!-- 하단 고정 입력창 (1행 압축) -->
+    <div style="position:fixed;bottom:var(--bottom-bar,0);left:0;right:0;background:var(--bg2);border-top:1px solid var(--border);z-index:50;height:52px;display:flex;align-items:center;gap:8px;padding:0 0.75rem;max-width:680px;margin:0 auto">
+      <button onclick="clearCalc()" style="background:none;border:none;color:var(--text3);font-size:18px;cursor:pointer;padding:4px;line-height:1;flex-shrink:0">✕</button>
+      <input type="number" id="calc-input" placeholder="금액 입력" step="any"
+        inputmode="decimal"
+        oninput="calcConvert(this.value)"
+        style="flex:1;font-size:16px;padding:6px 10px;border-radius:7px;border:1px solid var(--border);background:var(--bg3);color:var(--text);outline:none;font-family:var(--font);height:36px">
+      <div style="display:flex;align-items:center;gap:4px;flex-shrink:0">
+        <span style="font-size:11px;color:var(--text3)">P%</span>
+        <button onclick="adjPremium(-0.5)" style="background:var(--bg3);border:1px solid var(--border);border-radius:5px;width:28px;height:28px;cursor:pointer;color:var(--text2);font-size:16px;line-height:1;flex-shrink:0">−</button>
         <input type="number" id="calc-premium" value="0" step="0.1"
           inputmode="decimal"
           oninput="calcConvert(document.getElementById('calc-input').value)"
-          style="width:54px;padding:6px 8px;font-size:13px;border-radius:6px;border:1px solid var(--border);background:var(--bg3);color:var(--text);text-align:center;font-family:var(--font);min-height:36px">
-        <button onclick="adjPremium(-0.5)" style="background:var(--bg3);border:1px solid var(--border);border-radius:6px;width:36px;height:36px;cursor:pointer;color:var(--text2);font-size:18px;line-height:1;flex-shrink:0">−</button>
-        <button onclick="adjPremium(0.5)"  style="background:var(--bg3);border:1px solid var(--border);border-radius:6px;width:36px;height:36px;cursor:pointer;color:var(--text2);font-size:18px;line-height:1;flex-shrink:0">+</button>
+          style="width:40px;padding:4px 4px;font-size:12px;border-radius:5px;border:1px solid var(--border);background:var(--bg3);color:var(--text);text-align:center;font-family:var(--font);height:28px">
+        <button onclick="adjPremium(0.5)" style="background:var(--bg3);border:1px solid var(--border);border-radius:5px;width:28px;height:28px;cursor:pointer;color:var(--text2);font-size:16px;line-height:1;flex-shrink:0">+</button>
       </div>
-      <!-- 3행: 현재 시세 요약 -->
-      <div style="text-align:center;padding:0 1rem 8px;font-size:11px;color:var(--text3)" id="calc-rate-bar">-</div>
+      <div style="position:relative;flex-shrink:0">
+        <button onclick="toggleUnitMenu()" id="unit-btn"
+          style="background:var(--bg3);border:1px solid var(--border);border-radius:7px;padding:6px 10px;color:var(--text);font-size:13px;font-weight:500;cursor:pointer;font-family:var(--font);display:flex;align-items:center;gap:3px;height:36px">
+          <span id="unit-label">BTC</span>
+          <span style="font-size:9px;color:var(--text3)">▾</span>
+        </button>
+        <div id="unit-menu" style="display:none;position:absolute;bottom:calc(100% + 6px);right:0;background:var(--bg2);border:1px solid var(--border);border-radius:10px;overflow:hidden;min-width:120px;box-shadow:0 8px 24px rgba(0,0,0,.4)">
+          <div style="font-size:11px;color:var(--text3);text-align:center;border-bottom:1px solid var(--border);padding:8px;letter-spacing:.06em">단위 설정</div>
+          <div class="unit-option active" onclick="setUnit('BTC')">BTC ✓</div>
+          <div class="unit-option" onclick="setUnit('KRW')">KRW</div>
+          <div class="unit-option" onclick="setUnit('USD')">USD</div>
+          <div class="unit-option" onclick="setUnit('Sats')">Sats</div>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -470,10 +472,6 @@ select.s-inp{width:100%}
   <button class="bottom-tab" onclick="showTab('calc')">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="2" width="16" height="20" rx="2"/><path d="M8 7h8M8 12h8M8 17h4"/></svg>
     <span>계산기</span>
-  </button>
-  <button class="bottom-tab" onclick="showTab('settings')">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.22 4.22l2.12 2.12M17.66 17.66l2.12 2.12M4.22 19.78l2.12-2.12M17.66 6.34l2.12-2.12"/></svg>
-    <span>설정</span>
   </button>
 </nav>
 
