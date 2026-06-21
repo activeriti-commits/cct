@@ -15,13 +15,20 @@ const db = window._supabase;
 window.addEventListener('beforeinstallprompt', e => {
   e.preventDefault();
   deferredPrompt = e;
+  // 설정 탭 버튼
   const btn = document.getElementById('pwa-install-btn');
   const lbl = document.getElementById('pwa-manual-lbl');
   if (btn) btn.style.display = '';
   if (lbl) lbl.style.display = 'none';
+  // 첫 방문 배너
+  if (!localStorage.getItem('pwaPromptDismissed')) {
+    const banner = document.getElementById('pwa-banner');
+    if (banner) banner.style.display = 'flex';
+  }
 });
 window.addEventListener('appinstalled', () => {
   deferredPrompt = null;
+  dismissPWABanner();
   const btn = document.getElementById('pwa-install-btn');
   const lbl = document.getElementById('pwa-installed-lbl');
   const ml  = document.getElementById('pwa-manual-lbl');
@@ -32,7 +39,15 @@ window.addEventListener('appinstalled', () => {
 function installPWA() {
   if (!deferredPrompt) return;
   deferredPrompt.prompt();
-  deferredPrompt.userChoice.then(() => { deferredPrompt = null; });
+  deferredPrompt.userChoice.then(() => {
+    deferredPrompt = null;
+    dismissPWABanner();
+  });
+}
+function dismissPWABanner() {
+  localStorage.setItem('pwaPromptDismissed', '1');
+  const banner = document.getElementById('pwa-banner');
+  if (banner) banner.style.display = 'none';
 }
 
 // ── 인증 ─────────────────────────────────────

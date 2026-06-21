@@ -228,6 +228,18 @@ input:focus{border-color:var(--accent)}
 
   <!-- 대시보드 -->
   <div id="tab-dashboard">
+
+    <!-- PWA 설치 배너 (첫 방문 시만) -->
+    <div id="pwa-banner" style="display:none;background:linear-gradient(135deg,rgba(61,126,255,0.1),rgba(0,196,140,0.07));border:1px solid rgba(61,126,255,0.22);border-radius:var(--r);padding:13px 14px;margin-bottom:1.25rem;align-items:center;gap:10px">
+      <div style="font-size:18px;flex-shrink:0">📲</div>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:13px;font-weight:500;color:var(--text)">앱으로 설치하기</div>
+        <div style="font-size:11px;color:var(--text3);margin-top:1px">홈 화면 추가 → 빠른 실행</div>
+      </div>
+      <button id="pwa-banner-btn" onclick="installPWA()" class="btn btn-p" style="font-size:12px;padding:5px 12px;flex-shrink:0">설치</button>
+      <button onclick="dismissPWABanner()" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:20px;padding:2px 4px;line-height:1;flex-shrink:0">×</button>
+    </div>
+
     <div class="page-header">
       <div style="display:flex;justify-content:space-between;align-items:flex-start">
         <div>
@@ -466,11 +478,6 @@ input:focus{border-color:var(--accent)}
         <div class="s-lbl">환율 직접 입력 (KRW)</div>
         <input type="number" id="s-fx" step="1" class="s-inp">
       </div>
-    </div>
-
-    <!-- 스타일 및 화면 -->
-    <div class="s-section-title">스타일 및 화면</div>
-    <div class="card" style="margin-bottom:1rem">
       <div class="s-row">
         <div>
           <div class="s-lbl">통화 단위</div>
