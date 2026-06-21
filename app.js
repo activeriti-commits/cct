@@ -8,7 +8,32 @@ const DEFAULT_S = {
 };
 
 let S = {...DEFAULT_S}, E = [], currentUser = null, lineChart = null;
+let prevTab = 'dashboard', currentTab = 'dashboard';
+let deferredPrompt = null;
 const db = window._supabase;
+
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault();
+  deferredPrompt = e;
+  const btn = document.getElementById('pwa-install-btn');
+  const lbl = document.getElementById('pwa-manual-lbl');
+  if (btn) btn.style.display = '';
+  if (lbl) lbl.style.display = 'none';
+});
+window.addEventListener('appinstalled', () => {
+  deferredPrompt = null;
+  const btn = document.getElementById('pwa-install-btn');
+  const lbl = document.getElementById('pwa-installed-lbl');
+  const ml  = document.getElementById('pwa-manual-lbl');
+  if (btn) btn.style.display = 'none';
+  if (lbl) lbl.style.display = '';
+  if (ml)  ml.style.display = 'none';
+});
+function installPWA() {
+  if (!deferredPrompt) return;
+  deferredPrompt.prompt();
+  deferredPrompt.userChoice.then(() => { deferredPrompt = null; });
+}
 
 // ── 인증 ─────────────────────────────────────
 db.auth.onAuthStateChange(async (event, session) => {
@@ -22,8 +47,15 @@ db.auth.onAuthStateChange(async (event, session) => {
 function updateAuthUI() {
   if (!currentUser) return;
   const email = currentUser.email || '';
+  const name = email.split('@')[0];
   document.getElementById('user-avatar').textContent = email[0]?.toUpperCase() || 'U';
-  document.getElementById('user-name').textContent = email.split('@')[0];
+  document.getElementById('user-name').textContent = name;
+  const sa = document.getElementById('settings-avatar');
+  const su = document.getElementById('settings-username');
+  const se = document.getElementById('settings-email');
+  if (sa) sa.textContent = email[0]?.toUpperCase() || 'U';
+  if (su) su.textContent = name;
+  if (se) se.textContent = email;
 }
 
 async function doLogout() {
@@ -276,16 +308,31 @@ function renderSettingsForm() {
 }
 
 // ── 탭 ───────────────────────────────────────
-const TABS = ['dashboard','log','monthly','capture','calc','settings'];
+// 순서 = 하단바 버튼 순서와 일치: 대시보드|기록|계산기|결산|캡처|설정
+const TABS = ['dashboard','log','calc','monthly','capture','settings'];
 function showTab(name) {
+  if (name !== currentTab) { prevTab = currentTab; currentTab = name; }
   TABS.forEach((t, i) => {
     document.getElementById('tab-'+t).classList.toggle('hidden', t !== name);
-    const sideItems   = document.querySelectorAll('.nav-item');
     const bottomItems = document.querySelectorAll('.bottom-tab');
-    if (sideItems[i])   sideItems[i].classList.toggle('on', t === name);
     if (bottomItems[i]) bottomItems[i].classList.toggle('on', t === name);
   });
   if (name === 'calc') showCalcBar();
+  updateTopBar();
+}
+
+function updateTopBar() {
+  const btn = document.querySelector('.top-bar-settings');
+  if (!btn) return;
+  if (currentTab === 'settings') {
+    btn.setAttribute('aria-label', '뒤로');
+    btn.innerHTML = `<svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 4L6 10l6 6"/></svg>`;
+    btn.onclick = () => showTab(prevTab || 'dashboard');
+  } else {
+    btn.setAttribute('aria-label', '설정');
+    btn.innerHTML = `<svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="9" cy="9" r="2.5"/><path d="M9 1v2M9 15v2M1 9h2M15 9h2M3.22 3.22l1.42 1.42M13.36 13.36l1.42 1.42M3.22 14.78l1.42-1.42M13.36 4.64l1.42-1.42"/></svg>`;
+    btn.onclick = () => showTab('settings');
+  }
 }
 
 // ── CRUD ─────────────────────────────────────
@@ -334,7 +381,7 @@ function saveSettings() {
   S.overseas  = document.getElementById('s-overseas')?.value || S.overseas;
   if (!S.fxAuto) S.fx = parseInt(document.getElementById('s-fx')?.value) || S.fx;
   else fetchFx();
-  persist(); render(); showTab('dashboard');
+  persist(); render();
   toast('설정이 저장됐어요');
 }
 

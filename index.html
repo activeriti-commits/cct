@@ -162,11 +162,23 @@ input:focus{border-color:var(--accent)}
   .ml{font-size:10px}
 }
 
-/* 설정 탭: 라벨 위 + 입력창 풀너비 (항상) */
-.s-row{flex-direction:column;align-items:flex-start;gap:8px;padding:14px 0}
-.s-inp{width:100%}
-select.s-inp{width:100%}
+/* ── 설정 ── */
+.s-section{margin-bottom:1rem}
+.s-section-title{font-size:11px;color:var(--text3);letter-spacing:.08em;text-transform:uppercase;font-weight:500;padding:0 0 8px}
+.s-row{display:flex;justify-content:space-between;align-items:center;padding:13px 0;border-bottom:1px solid var(--border)}
+.s-row:last-child{border-bottom:none}
+.s-lbl{font-size:14px;color:var(--text)}
+.s-sub{font-size:12px;color:var(--text3);margin-top:2px}
+.s-inp{width:160px}
+.s-stack{flex-direction:column;align-items:stretch;gap:8px}
+.s-stack .s-inp{width:100%}
+.s-stack select.s-inp{width:100%}
 .form-grid{grid-template-columns:1fr}
+.settings-profile{display:flex;align-items:center;gap:14px;padding:4px 0 20px}
+.settings-avatar{width:48px;height:48px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--green));display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:700;color:#fff;flex-shrink:0}
+.settings-username{font-size:16px;font-weight:600;color:var(--text)}
+.settings-email{font-size:12px;color:var(--text3);margin-top:2px}
+.pwa-install-row{display:flex;justify-content:space-between;align-items:center;padding:13px 0}
 
 /* ── 계산기 환산 행 ── */
 .cv-content{padding-bottom:calc(var(--bottom-bar) + 60px)}
@@ -393,33 +405,42 @@ select.s-inp{width:100%}
 
   <!-- 설정 -->
   <div id="tab-settings" class="hidden">
-    <div class="page-header" style="display:flex;justify-content:space-between;align-items:center">
-      <div class="page-title">설정</div>
-      <button onclick="doLogout()" style="background:none;border:1px solid var(--red-dim);border-radius:8px;padding:7px 14px;color:var(--red);font-size:13px;cursor:pointer;font-family:var(--font)">로그아웃</button>
-    </div>
-    <div class="card">
-      <div class="ct">기본 설정</div>
-      <div class="s-row"><div class="s-lbl">일지 제목</div><input type="text" id="s-title" class="s-inp"></div>
-      <div class="s-row"><div class="s-lbl">투자 시작일</div><input type="date" id="s-start" class="s-inp"></div>
-      <div class="s-row"><div class="s-lbl">초기 시드 (USDT)</div><input type="number" id="s-seed" step="0.01" class="s-inp"></div>
-      <div class="s-row">
-        <div class="s-lbl">통화 단위</div>
-        <select id="s-currency" class="s-inp" style="width:140px">
-          <option value="KRW/USD">KRW/USD</option>
-          <option value="USD">USD</option>
-          <option value="KRW">KRW</option>
-        </select>
+
+    <!-- 프로필 -->
+    <div class="settings-profile">
+      <div class="settings-avatar" id="settings-avatar">?</div>
+      <div>
+        <div class="settings-username" id="settings-username">-</div>
+        <div class="settings-email" id="settings-email">-</div>
       </div>
+    </div>
+
+    <!-- 기본 정보 -->
+    <div class="s-section-title">기본 정보</div>
+    <div class="card" style="margin-bottom:1rem">
+      <div class="s-row s-stack"><div class="s-lbl">일지 제목</div><input type="text" id="s-title" class="s-inp"></div>
+      <div class="s-row s-stack"><div class="s-lbl">투자 시작일</div><input type="date" id="s-start" class="s-inp"></div>
+      <div class="s-row s-stack"><div class="s-lbl">초기 시드 (USDT)</div><input type="number" id="s-seed" step="0.01" class="s-inp"></div>
+      <div class="s-row s-stack"><div class="s-lbl">목표 금액 (USDT)</div><input type="number" id="s-goal" step="1" class="s-inp"></div>
+      <div class="btn-row" style="margin-top:14px">
+        <button class="btn btn-p" onclick="saveSettings()">저장</button>
+        <button class="btn btn-d" id="btn-reset" onclick="resetAll()">전체 초기화</button>
+      </div>
+    </div>
+
+    <!-- 가격 설정 -->
+    <div class="s-section-title">가격 설정</div>
+    <div class="card" style="margin-bottom:1rem">
       <div class="s-row">
         <div class="s-lbl">국내거래소</div>
-        <select id="s-domestic" class="s-inp" style="width:140px">
+        <select id="s-domestic" class="s-inp" onchange="saveSettings()">
           <option value="upbit">업비트</option>
           <option value="bithumb">빗썸</option>
         </select>
       </div>
       <div class="s-row">
         <div class="s-lbl">해외거래소</div>
-        <select id="s-overseas" class="s-inp" style="width:140px">
+        <select id="s-overseas" class="s-inp" onchange="saveSettings()">
           <option value="binance">바이낸스</option>
           <option value="coinbase">코인베이스</option>
         </select>
@@ -427,7 +448,7 @@ select.s-inp{width:100%}
       <div class="s-row">
         <div>
           <div class="s-lbl">USDT 기준 환율</div>
-          <div class="s-sub" id="fx-sub">빗썸 실시간 자동 연동</div>
+          <div class="s-sub" id="fx-sub">실시간 자동 연동</div>
         </div>
         <div style="display:flex;align-items:center;gap:8px">
           <span id="fx-toggle-lbl" style="font-size:13px;color:var(--text2)">자동</span>
@@ -436,22 +457,65 @@ select.s-inp{width:100%}
           </div>
         </div>
       </div>
-      <div class="s-row" id="fx-manual-row" style="display:none">
-        <div><div class="s-lbl">환율 직접 입력 (KRW)</div></div>
+      <div class="s-row s-stack" id="fx-manual-row" style="display:none">
+        <div class="s-lbl">환율 직접 입력 (KRW)</div>
         <input type="number" id="s-fx" step="1" class="s-inp">
       </div>
-      <div class="s-row"><div class="s-lbl">목표 금액 (USDT)</div><input type="number" id="s-goal" step="1" class="s-inp"></div>
-      <div class="btn-row" style="margin-top:16px">
-        <button class="btn btn-p" onclick="saveSettings()">저장</button>
-        <button class="btn btn-d" id="btn-reset" onclick="resetAll()">전체 초기화</button>
+    </div>
+
+    <!-- 스타일 및 화면 -->
+    <div class="s-section-title">스타일 및 화면</div>
+    <div class="card" style="margin-bottom:1rem">
+      <div class="s-row">
+        <div>
+          <div class="s-lbl">통화 단위</div>
+          <div class="s-sub">수익/자산 표시 기준</div>
+        </div>
+        <select id="s-currency" class="s-inp" onchange="saveSettings()">
+          <option value="KRW/USD">KRW + USD</option>
+          <option value="USD">USD만</option>
+          <option value="KRW">KRW만</option>
+        </select>
       </div>
     </div>
+
+    <!-- 앱 설치 -->
+    <div class="s-section-title">앱 설치</div>
+    <div class="card" style="margin-bottom:1rem">
+      <div class="pwa-install-row">
+        <div>
+          <div class="s-lbl">홈 화면에 추가</div>
+          <div class="s-sub">앱처럼 빠르게 실행</div>
+        </div>
+        <button id="pwa-install-btn" onclick="installPWA()" class="btn btn-p" style="display:none">설치</button>
+        <span id="pwa-installed-lbl" style="font-size:13px;color:var(--text3);display:none">설치됨</span>
+        <span id="pwa-manual-lbl" style="font-size:12px;color:var(--text3)">브라우저 메뉴 → 홈 화면에 추가</span>
+      </div>
+    </div>
+
+    <!-- 정보 -->
+    <div class="s-section-title">정보</div>
+    <div class="card" style="margin-bottom:2rem">
+      <div class="s-row">
+        <div class="s-lbl">버전</div>
+        <span style="font-size:13px;color:var(--text3)">v1.0.0</span>
+      </div>
+      <div class="s-row">
+        <div class="s-lbl">개발자</div>
+        <span style="font-size:13px;color:var(--text3)">@activeriti</span>
+      </div>
+      <div class="s-row" style="border-bottom:none">
+        <div class="s-lbl" style="color:var(--red)">로그아웃</div>
+        <button onclick="doLogout()" style="background:none;border:1px solid var(--red-dim);border-radius:8px;padding:6px 14px;color:var(--red);font-size:13px;cursor:pointer;font-family:var(--font)">로그아웃</button>
+      </div>
+    </div>
+
   </div>
 
 </main>
 
 
-<!-- 하단 탭바 (모바일) -->
+<!-- 하단 탭바 -->
 <nav class="bottom-bar">
   <button class="bottom-tab on" onclick="showTab('dashboard')">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="2" y="2" width="9" height="9" rx="1.5"/><rect x="13" y="2" width="9" height="9" rx="1.5"/><rect x="2" y="13" width="9" height="9" rx="1.5"/><rect x="13" y="13" width="9" height="9" rx="1.5"/></svg>
@@ -461,6 +525,10 @@ select.s-inp{width:100%}
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 6h18M3 12h12M3 18h9"/></svg>
     <span>기록</span>
   </button>
+  <button class="bottom-tab" onclick="showTab('calc')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="2" width="16" height="20" rx="2"/><path d="M8 7h8M8 12h8M8 17h4"/></svg>
+    <span>계산기</span>
+  </button>
   <button class="bottom-tab" onclick="showTab('monthly')">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="2" y="4" width="20" height="18" rx="2"/><path d="M8 2v4M16 2v4M2 10h20"/></svg>
     <span>결산</span>
@@ -468,10 +536,6 @@ select.s-inp{width:100%}
   <button class="bottom-tab" onclick="showTab('capture')">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
     <span>캡처</span>
-  </button>
-  <button class="bottom-tab" onclick="showTab('calc')">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="2" width="16" height="20" rx="2"/><path d="M8 7h8M8 12h8M8 17h4"/></svg>
-    <span>계산기</span>
   </button>
 </nav>
 
