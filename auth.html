@@ -64,6 +64,12 @@ input::placeholder{color:var(--text3)}
     <div class="logo-sub">Crypto Currency Trader</div>
   </div>
 
+  <!-- 인앱 브라우저 경고 -->
+  <div id="inapp-warn" style="display:none;background:#2a1a0a;border:1px solid #f97316;border-radius:10px;padding:12px 14px;margin-bottom:12px;font-size:13px;color:#f97316;line-height:1.55">
+    ⚠️ <strong>인앱 브라우저 감지됨</strong><br>
+    <span style="color:var(--text2);font-size:12px">Google 로그인이 차단될 수 있습니다.<br>Chrome 또는 Safari로 열어주세요.</span>
+  </div>
+
   <!-- 로그인/회원가입 -->
   <div class="card" id="c-auth">
     <div class="tabs">
@@ -195,6 +201,11 @@ if (tokenType === 'recovery' && accessToken) {
   db.auth.getSession().then(({data:{session}}) => { if(session) location.href='./index.html'; });
 }
 
+if (isInAppBrowser()) {
+  const w = document.getElementById('inapp-warn');
+  if (w) w.style.display = '';
+}
+
 function switchTab(t) {
   tab = t;
   document.getElementById('f-login').style.display = t==='login'?'block':'none';
@@ -245,7 +256,17 @@ function checkStr(pw) {
   }
 }
 
+function isInAppBrowser() {
+  const ua = navigator.userAgent || '';
+  return /FBAN|FBAV|Twitter|Instagram|Line|NAVER|KakaoTalk|Snapchat|Pinterest/.test(ua)
+    || (ua.includes('Android') && /; wv\)/.test(ua));
+}
+
 async function doGoogle() {
+  if (isInAppBrowser()) {
+    setMsg('⚠️ 카카오톡, X(트위터), 인스타그램 등 인앱 브라우저에서는 Google 로그인이 차단됩니다. Chrome 또는 Safari로 열어주세요.');
+    return;
+  }
   const { error } = await db.auth.signInWithOAuth({
     provider: 'google',
     options: { redirectTo: location.origin + '/index.html' }

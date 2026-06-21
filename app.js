@@ -624,9 +624,9 @@ function toggleHalvingInfo() {
   const open = body.classList.toggle('open');
   if (arrow) arrow.style.transform = open ? 'rotate(90deg)' : '';
   if (!open) {
-    body.style.overflowY = '';
+    body.style.overflow = '';
   } else {
-    setTimeout(() => { body.style.overflowY = 'auto'; }, 420);
+    setTimeout(() => { body.style.overflow = 'visible'; }, 520);
   }
 }
 
