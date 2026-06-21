@@ -227,6 +227,47 @@ input:focus{border-color:var(--accent)}
   :root{--sidebar:0}
   .cv-num{font-size:20px}
 }
+/* ── Sats 역산 ── */
+.sats-line{font-size:11px;color:var(--text3);margin-top:2px}
+/* ── Top Assets ── */
+.ta-row{display:flex;align-items:center;gap:10px;padding:11px 16px;border-bottom:1px solid var(--border)}
+.ta-row:last-child{border-bottom:none}
+.ta-rank{font-size:12px;color:var(--text3);width:18px;text-align:right;flex-shrink:0}
+.ta-icon{width:28px;height:28px;border-radius:50%;object-fit:cover;flex-shrink:0;background:var(--bg3)}
+.ta-name{flex:1;min-width:0}
+.ta-sym{font-size:13px;font-weight:600;color:var(--text)}
+.ta-full{font-size:11px;color:var(--text3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ta-right{text-align:right;flex-shrink:0}
+.ta-price{font-size:13px;font-weight:600;color:var(--text)}
+.ta-mcap{font-size:11px;color:var(--text3);margin-top:1px}
+.ta-chg{font-size:12px;font-weight:500;min-width:52px;text-align:right;flex-shrink:0}
+/* ── 멤풀 탭 ── */
+.mp-section-title{font-size:11px;color:var(--text3);letter-spacing:.08em;text-transform:uppercase;font-weight:500;padding:0 0 8px}
+.mp-block-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:1.25rem 1.5rem;margin-bottom:1rem;text-align:center}
+.mp-block-num{font-size:42px;font-weight:700;color:var(--text);letter-spacing:-.02em;line-height:1.1}
+.mp-block-lbl{font-size:12px;color:var(--text3);margin-top:6px;letter-spacing:.06em;text-transform:uppercase}
+.mp-fee-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:1rem}
+.mp-fee-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:14px 12px;text-align:center}
+.mp-fee-val{font-size:22px;font-weight:700;color:var(--text)}
+.mp-fee-unit{font-size:10px;color:var(--text3);margin-top:2px}
+.mp-fee-lbl{font-size:11px;color:var(--text2);margin-top:6px}
+.mp-halving-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:1.25rem 1.5rem;margin-bottom:1rem}
+.mp-halving-row{display:flex;justify-content:space-between;align-items:center;padding:6px 0}
+.mp-halving-lbl{font-size:13px;color:var(--text2)}
+.mp-halving-val{font-size:14px;font-weight:600;color:var(--text);text-align:right}
+.mp-halving-date{font-size:12px;color:var(--text3);text-align:right;margin-top:2px}
+.mp-acc-header{display:flex;justify-content:space-between;align-items:center;cursor:pointer;padding:13px 0;border-top:1px solid var(--border);margin-top:4px}
+.mp-acc-header:hover{opacity:.8}
+.mp-acc-title{font-size:14px;font-weight:500;color:var(--text)}
+.mp-acc-arrow{font-size:12px;color:var(--text3);transition:transform .35s cubic-bezier(.4,0,.2,1)}
+.mp-acc-body{max-height:0;overflow:hidden;transition:max-height .4s cubic-bezier(.4,0,.2,1)}
+.mp-acc-body.open{max-height:600px}
+.mp-acc-inner{padding:8px 0 4px}
+.mp-info-row{display:flex;gap:12px;padding:9px 0;border-bottom:1px solid var(--border)}
+.mp-info-row:last-child{border-bottom:none}
+.mp-info-icon{font-size:16px;flex-shrink:0;width:22px}
+.mp-info-text{font-size:13px;color:var(--text2);line-height:1.5}
+.mp-info-bold{font-weight:600;color:var(--text)}
 </style>
 </head>
 <body>
@@ -302,8 +343,16 @@ input:focus{border-color:var(--accent)}
   <!-- 매매기록 -->
   <div id="tab-log" class="hidden">
     <div class="page-header">
-      <div class="page-title">매매기록</div>
-      <div class="page-sub">마감 총자산을 입력하면 손익이 자동 계산됩니다</div>
+      <div style="display:flex;justify-content:space-between;align-items:flex-start">
+        <div>
+          <div class="page-title">매매기록</div>
+          <div class="page-sub">마감 총자산을 입력하면 손익이 자동 계산됩니다</div>
+        </div>
+        <button onclick="showTab('monthly')" title="월별 결산" style="background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:6px 12px;cursor:pointer;color:var(--text2);display:flex;align-items:center;gap:6px;font-size:12px;font-family:var(--font);flex-shrink:0;margin-top:4px">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="2" y="4" width="20" height="18" rx="2"/><path d="M8 2v4M16 2v4M2 10h20"/></svg>
+          결산
+        </button>
+      </div>
     </div>
     <div class="card">
       <div class="ct">새 기록 추가</div>
@@ -364,7 +413,10 @@ input:focus{border-color:var(--accent)}
     <div class="cv-content">
       <!-- 헤더 -->
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.5rem">
-        <div style="font-size:11px;color:var(--text3)">BTC $<span id="calc-btc-price">-</span> · ₩<span id="calc-rate">-</span></div>
+        <div>
+          <div style="font-size:11px;color:var(--text3)">BTC $<span id="calc-btc-price">-</span> · ₩<span id="calc-rate">-</span></div>
+          <div class="sats-line">1 USD = <span id="calc-sats-per-usd">-</span> Sats</div>
+        </div>
         <span onclick="refreshCalcPrices()" style="font-size:12px;color:var(--accent);cursor:pointer">↻ 새로고침</span>
       </div>
 
@@ -471,11 +523,110 @@ input:focus{border-color:var(--accent)}
     </div>
   </div>
 
+  <!-- 멤풀 -->
+  <div id="tab-mempool" class="hidden">
+    <div class="page-header">
+      <div class="page-title">멤풀</div>
+      <div class="page-sub">Bitcoin 네트워크 실시간 현황</div>
+    </div>
+
+    <!-- 블록 높이 -->
+    <div class="mp-section-title">현재 블록 높이</div>
+    <div class="mp-block-card">
+      <div class="mp-block-num" id="mp-block-height">-</div>
+      <div class="mp-block-lbl">Block Height</div>
+    </div>
+
+    <!-- 수수료 -->
+    <div class="mp-section-title">트랜잭션 수수료 (sat/vB)</div>
+    <div class="mp-fee-grid">
+      <div class="mp-fee-card">
+        <div class="mp-fee-val" id="mp-fee-fast">-</div>
+        <div class="mp-fee-unit">sat/vB</div>
+        <div class="mp-fee-lbl">빠름 (~10분)</div>
+      </div>
+      <div class="mp-fee-card">
+        <div class="mp-fee-val" id="mp-fee-half">-</div>
+        <div class="mp-fee-unit">sat/vB</div>
+        <div class="mp-fee-lbl">보통 (~30분)</div>
+      </div>
+      <div class="mp-fee-card">
+        <div class="mp-fee-val" id="mp-fee-hour">-</div>
+        <div class="mp-fee-unit">sat/vB</div>
+        <div class="mp-fee-lbl">저렴 (~1시간)</div>
+      </div>
+    </div>
+
+    <!-- 반감기 카운트다운 -->
+    <div class="mp-section-title">다음 반감기</div>
+    <div class="mp-halving-card">
+      <div class="mp-halving-row">
+        <span class="mp-halving-lbl">목표 블록</span>
+        <span class="mp-halving-val">1,050,000</span>
+      </div>
+      <div class="mp-halving-row">
+        <span class="mp-halving-lbl">남은 블록</span>
+        <span class="mp-halving-val" id="mp-halving-remain">-</span>
+      </div>
+      <div class="mp-halving-row" style="border-top:1px solid var(--border);margin-top:6px;padding-top:12px">
+        <span class="mp-halving-lbl">예상 날짜</span>
+        <div>
+          <div class="mp-halving-val" id="mp-halving-date">-</div>
+          <div class="mp-halving-date" id="mp-halving-days">-</div>
+        </div>
+      </div>
+
+      <!-- 반감기 정보 아코디언 -->
+      <div class="mp-acc-header" onclick="toggleHalvingInfo()">
+        <span class="mp-acc-title">반감기란?</span>
+        <span class="mp-acc-arrow" id="mp-acc-arrow">›</span>
+      </div>
+      <div class="mp-acc-body" id="mp-acc-body">
+        <div class="mp-acc-inner">
+          <div class="mp-info-row">
+            <span class="mp-info-icon">₿</span>
+            <span class="mp-info-text"><span class="mp-info-bold">반감기(Halving)</span>는 약 4년마다 비트코인 채굴 보상이 절반으로 줄어드는 이벤트입니다.</span>
+          </div>
+          <div class="mp-info-row">
+            <span class="mp-info-icon">⛏</span>
+            <span class="mp-info-text">현재 블록당 보상은 <span class="mp-info-bold" id="mp-current-reward">3.125 BTC</span>입니다. 다음 반감기 후에는 1.5625 BTC가 됩니다.</span>
+          </div>
+          <div class="mp-info-row">
+            <span class="mp-info-icon">📦</span>
+            <span class="mp-info-text">반감기는 정확히 <span class="mp-info-bold">210,000 블록</span>마다 발생합니다. 블록 생성 간격은 평균 10분입니다.</span>
+          </div>
+          <div class="mp-info-row">
+            <span class="mp-info-icon">🔒</span>
+            <span class="mp-info-text">비트코인의 총 발행량은 <span class="mp-info-bold">2,100만 개</span>로 고정되어 있습니다. 2140년경 모두 채굴됩니다.</span>
+          </div>
+          <div class="mp-info-row">
+            <span class="mp-info-icon">📈</span>
+            <span class="mp-info-text">역사적으로 반감기 이후 공급 감소로 인해 장기적인 가격 상승이 나타나는 경향이 있습니다.</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- 유틸리티 -->
   <div id="tab-utility" class="hidden">
     <div class="page-header">
       <div class="page-title">유틸리티</div>
       <div class="page-sub">비트코인 최고주의자를 위한 공간</div>
+    </div>
+
+    <!-- Top Assets by Market Cap -->
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:0 0 8px">
+      <div class="s-section-title" style="padding:0;margin:0">시가총액 Top 10</div>
+      <span id="top-assets-updated" style="font-size:11px;color:var(--text3)"></span>
+    </div>
+    <div class="card" style="margin-bottom:1rem;padding:0;overflow:hidden">
+      <div id="top-assets-loading" style="padding:1.25rem 1.5rem;text-align:center;font-size:13px;color:var(--text3)">불러오는 중...</div>
+      <div id="top-assets-list" style="display:none"></div>
+      <div style="border-top:1px solid var(--border);padding:10px 16px;display:flex;justify-content:space-between;align-items:center">
+        <span style="font-size:11px;color:var(--text3)">CoinGecko</span>
+        <button onclick="loadTopAssets(true)" style="background:none;border:none;color:var(--accent);font-size:12px;cursor:pointer;font-family:var(--font);padding:2px 0">↻ 새로고침</button>
+      </div>
     </div>
 
     <div class="s-section-title">Bitcoin 데이터</div>
@@ -725,9 +876,9 @@ input:focus{border-color:var(--accent)}
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="2" width="16" height="20" rx="2"/><path d="M8 7h8M8 12h8M8 17h4"/></svg>
     <span>계산기</span>
   </button>
-  <button class="bottom-tab" onclick="showTab('monthly')">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="2" y="4" width="20" height="18" rx="2"/><path d="M8 2v4M16 2v4M2 10h20"/></svg>
-    <span>결산</span>
+  <button class="bottom-tab" onclick="showTab('mempool')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 17h7M17.5 14v7"/></svg>
+    <span>멤풀</span>
   </button>
   <button class="bottom-tab" onclick="showTab('utility')">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.22 4.22l2.12 2.12M17.66 17.66l2.12 2.12M2 12h3M19 12h3M4.22 19.78l2.12-2.12M17.66 6.34l2.12-2.12"/></svg>

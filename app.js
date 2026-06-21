@@ -144,6 +144,7 @@ async function loadFromDB() {
     const usdt = document.getElementById('usdt-krw');
     if (usdt && S.fx) usdt.textContent = '₩' + S.fx.toLocaleString();
     updatePremiumDisplay();
+    updateSatsPerUsd();
   });
 }
 
@@ -270,7 +271,10 @@ function renderLog(data) {
       <td><span class="badge ${e.pct>0?'pos':e.pct<0?'neg':'neu'}">${sgn(e.pct,1)}%</span></td>
       <td>${sgn(e.cumPnl)}$</td>
       <td class="memo-cell">${e.memo||'-'}</td>
-      <td><button class="del-btn" onclick="delEntry('${e.date}')">삭제</button></td>
+      <td style="white-space:nowrap">
+        <button class="del-btn" style="border-color:rgba(61,126,255,.3);color:var(--accent);margin-right:4px" onclick="editEntry('${e.date}')">수정</button>
+        <button class="del-btn" onclick="delEntry('${e.date}')">삭제</button>
+      </td>
     </tr>`).join('');
 }
 
@@ -343,8 +347,8 @@ function renderSettingsForm() {
 }
 
 // ── 탭 ───────────────────────────────────────
-// 순서 = 하단바 버튼 순서와 일치: 대시보드|기록|계산기|결산|유틸리티|설정 (+capture,bip39는 인덱스 없음)
-const TABS = ['dashboard','log','calc','monthly','utility','settings','capture','bip39'];
+// 순서 = 하단바 버튼 순서와 일치: 대시보드|기록|계산기|멤풀|유틸리티 (이후는 하단바 없음)
+const TABS = ['dashboard','log','calc','mempool','utility','settings','capture','bip39','monthly'];
 function showTab(name) {
   if (name !== currentTab) { prevTab = currentTab; currentTab = name; }
   TABS.forEach((t, i) => {
@@ -353,6 +357,8 @@ function showTab(name) {
     if (bottomItems[i]) bottomItems[i].classList.toggle('on', t === name);
   });
   if (name === 'calc') showCalcBar();
+  if (name === 'mempool') fetchAndRenderMempool();
+  if (name === 'utility') loadTopAssets();
   updateTopBar();
 }
 
@@ -376,7 +382,7 @@ function toggleAccordion(id) {
 function updateTopBar() {
   const btn = document.querySelector('.top-bar-settings');
   if (!btn) return;
-  if (currentTab === 'settings' || currentTab === 'capture' || currentTab === 'bip39') {
+  if (currentTab === 'settings' || currentTab === 'capture' || currentTab === 'bip39' || currentTab === 'monthly') {
     btn.setAttribute('aria-label', '뒤로');
     btn.innerHTML = BACK_SVG;
     btn.onclick = () => showTab(prevTab || 'dashboard');
@@ -416,6 +422,17 @@ function clearInputs() {
   document.getElementById('inp-date').value = new Date().toISOString().slice(0,10);
   document.getElementById('inp-asset').value = '';
   document.getElementById('inp-memo').value = '';
+}
+
+function editEntry(date) {
+  const entry = E.find(e => e.date === date);
+  if (!entry) return;
+  document.getElementById('inp-date').value = entry.date;
+  document.getElementById('inp-asset').value = entry.asset;
+  document.getElementById('inp-memo').value = entry.memo || '';
+  const card = document.querySelector('#tab-log .card');
+  if (card) card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  document.getElementById('inp-asset').focus();
 }
 
 function delEntry(date) {
@@ -481,6 +498,111 @@ function updatePremiumDisplay() {
   set('prem-fx', '₩' + Math.round(realFx).toLocaleString());
 }
 
+function updateSatsPerUsd() {
+  if (!calcBtcPrice) return;
+  const sats = Math.round(100_000_000 / calcBtcPrice);
+  const el = document.getElementById('calc-sats-per-usd');
+  if (el) el.textContent = sats.toLocaleString();
+}
+
+// ── 멤풀 ─────────────────────────────────────
+const NEXT_HALVING_BLOCK = 1_050_000;
+let _mempoolCacheAt = 0;
+
+async function fetchAndRenderMempool() {
+  if (Date.now() - _mempoolCacheAt < 30000) return;
+  const heightEl = document.getElementById('mp-block-height');
+  const [heightRes, feesRes] = await Promise.allSettled([
+    fetch('https://mempool.space/api/blocks/tip/height').then(r => r.json()),
+    fetch('https://mempool.space/api/v1/fees/recommended').then(r => r.json()),
+  ]);
+  if (heightRes.status === 'fulfilled') {
+    const height = heightRes.value;
+    if (heightEl) heightEl.textContent = height.toLocaleString();
+    const remain = Math.max(0, NEXT_HALVING_BLOCK - height);
+    const el = document.getElementById('mp-halving-remain');
+    if (el) el.textContent = remain.toLocaleString() + ' 블록';
+    const minutesLeft = remain * 10;
+    const msLeft = minutesLeft * 60 * 1000;
+    const eta = new Date(Date.now() + msLeft);
+    const dateEl = document.getElementById('mp-halving-date');
+    const daysEl = document.getElementById('mp-halving-days');
+    if (dateEl) dateEl.textContent = eta.toLocaleDateString('ko-KR', { year:'numeric', month:'long', day:'numeric' });
+    const daysLeft = Math.round(minutesLeft / 60 / 24);
+    if (daysEl) daysEl.textContent = '약 ' + daysLeft.toLocaleString() + '일 후 (예상)';
+    _mempoolCacheAt = Date.now();
+  }
+  if (feesRes.status === 'fulfilled') {
+    const f = feesRes.value;
+    const set = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v ?? '-'; };
+    set('mp-fee-fast', f.fastestFee);
+    set('mp-fee-half', f.halfHourFee);
+    set('mp-fee-hour', f.hourFee);
+  }
+}
+
+function toggleHalvingInfo() {
+  const body = document.getElementById('mp-acc-body');
+  const arrow = document.getElementById('mp-acc-arrow');
+  const open = body.classList.toggle('open');
+  if (arrow) arrow.style.transform = open ? 'rotate(90deg)' : '';
+}
+
+// ── Top Assets ─────────────────────────────
+let _topAssetsCacheAt = 0;
+
+async function loadTopAssets(force = false) {
+  if (!force && Date.now() - _topAssetsCacheAt < 60000) return;
+  const loading = document.getElementById('top-assets-loading');
+  const list    = document.getElementById('top-assets-list');
+  const updated = document.getElementById('top-assets-updated');
+  if (!list) return;
+  if (loading) loading.style.display = '';
+  list.style.display = 'none';
+  try {
+    const res = await fetch('https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=10&page=1&sparkline=false&price_change_percentage=24h');
+    if (!res.ok) throw new Error('api error');
+    const coins = await res.json();
+    const fmtMcap = v => {
+      if (v >= 1e12) return '$' + (v/1e12).toFixed(2) + 'T';
+      if (v >= 1e9)  return '$' + (v/1e9).toFixed(1) + 'B';
+      return '$' + (v/1e6).toFixed(0) + 'M';
+    };
+    const fmtPrice = v => {
+      if (v >= 1000) return '$' + Math.round(v).toLocaleString();
+      if (v >= 1)    return '$' + v.toFixed(2);
+      return '$' + v.toPrecision(4);
+    };
+    list.innerHTML = coins.map((c, i) => {
+      const chg = c.price_change_percentage_24h ?? 0;
+      const chgColor = chg >= 0 ? 'var(--green)' : 'var(--red)';
+      const chgSign = chg >= 0 ? '+' : '';
+      return `<div class="ta-row">
+        <span class="ta-rank">${i+1}</span>
+        <img class="ta-icon" src="${c.image}" alt="${c.symbol}" onerror="this.style.display='none'">
+        <div class="ta-name">
+          <div class="ta-sym">${c.symbol.toUpperCase()}</div>
+          <div class="ta-full">${c.name}</div>
+        </div>
+        <div class="ta-right">
+          <div class="ta-price">${fmtPrice(c.current_price)}</div>
+          <div class="ta-mcap">${fmtMcap(c.market_cap)}</div>
+        </div>
+        <span class="ta-chg" style="color:${chgColor}">${chgSign}${chg.toFixed(2)}%</span>
+      </div>`;
+    }).join('');
+    if (loading) loading.style.display = 'none';
+    list.style.display = '';
+    _topAssetsCacheAt = Date.now();
+    if (updated) {
+      const t = new Date();
+      updated.textContent = `${t.getHours().toString().padStart(2,'0')}:${t.getMinutes().toString().padStart(2,'0')} 업데이트`;
+    }
+  } catch(_) {
+    if (loading) loading.textContent = '불러오기 실패 — 새로고침을 눌러보세요';
+  }
+}
+
 // ── 테마 ─────────────────────────────────────
 function applyTheme(theme) {
   const actual = theme === 'system'
@@ -514,6 +636,7 @@ async function refreshCalcPrices() {
     s('calc-rate-bar',    calcBtcPrice > 0
       ? `해외 $${Math.round(calcBtcPrice).toLocaleString()} · 업비트 ₩${calcKrwBtcPrice > 0 ? Math.round(calcKrwBtcPrice).toLocaleString() : Math.round(calcBtcPrice * S.fx).toLocaleString()}`
       : '시세 로딩 중...');
+    updateSatsPerUsd();
   };
   showCurrent();
 
@@ -541,6 +664,7 @@ async function refreshCalcPrices() {
     _btcCacheAt = Date.now();
     showCurrent();
     updatePremiumDisplay();
+    updateSatsPerUsd();
   }
 
   const inp = document.getElementById('calc-input');
