@@ -142,22 +142,16 @@ function render() {
   if (usdt) usdt.textContent = '₩' + S.fx.toLocaleString();
 
   document.getElementById('r1').innerHTML =
+    M('현재 총자산', '$' + last.asset.toFixed(2), 'lg') +
+    M('총 수익률', sgn(last.cumPct, 2) + '%', last.cumPct >= 0 ? 'pos lg' : 'neg lg');
+
+  document.getElementById('r2').innerHTML =
     M('총 수익 (USDT)', sgn(last.cumPnl), last.cumPnl >= 0 ? 'pos' : 'neg') +
     M('원화 환산', krwFmt(last.krw), '', '현재 총자산 기준');
 
-  document.getElementById('r2').innerHTML =
-    M('총 수익률', sgn(last.cumPct, 2) + '%', last.cumPct >= 0 ? 'pos' : 'neg') +
-    M('투자 기간', `${days} Days`, 'sm', S.startDate + ' 시작');
-
   document.getElementById('r3').innerHTML =
-    M('역대 최고 하루 수익', '+$' + best.toFixed(2), 'pos sm') +
-    M('역대 최악 하루 손실', '$' + worst.toFixed(2), 'neg sm') +
-    M('환율', '₩' + S.fx.toLocaleString() + (S.fxAuto ? ' 🔄' : ''), 'sm', 'KRW/USDT');
-
-  document.getElementById('r4').innerHTML =
-    M('현재 총자산', '$' + last.asset.toFixed(2), 'sm') +
-    M('초기 시드', '$' + S.seed, 'sm') +
-    M('목표', '$' + S.goal.toLocaleString(), 'sm');
+    M('투자 기간', `${days} Days`, 'sm', S.startDate + ' 시작') +
+    M('역대 최고 하루 수익', '+$' + best.toFixed(2), 'pos sm');
 
   const pct = Math.min((last.asset / S.goal) * 100, 100);
   document.getElementById('gpct').textContent = pct.toFixed(2) + '%';
