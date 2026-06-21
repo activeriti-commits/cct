@@ -427,7 +427,10 @@ input:focus{border-color:var(--accent)}
 
   <!-- 설정 -->
   <div id="tab-settings" class="hidden">
-    <div class="page-header"><div class="page-title">설정</div></div>
+    <div class="page-header" style="display:flex;justify-content:space-between;align-items:center">
+      <div class="page-title">설정</div>
+      <button onclick="doLogout()" style="background:none;border:1px solid var(--red-dim);border-radius:8px;padding:7px 14px;color:var(--red);font-size:13px;cursor:pointer;font-family:var(--font)">로그아웃</button>
+    </div>
     <div class="card">
       <div class="ct">기본 설정</div>
       <div class="s-row"><div class="s-lbl">일지 제목</div><input type="text" id="s-title" class="s-inp"></div>
