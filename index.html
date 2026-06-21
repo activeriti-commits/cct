@@ -12,6 +12,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
 <style>
 :root{--bg:#0f1117;--bg2:#161b27;--bg3:#1e2535;--border:rgba(255,255,255,0.07);--text:#e8eaf0;--text2:#8892a4;--text3:#4d5566;--green:#00c48c;--green-dim:rgba(0,196,140,0.12);--red:#ff4d6a;--red-dim:rgba(255,77,106,0.12);--accent:#3d7eff;--r:10px;--font:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;--sidebar:0px;--top-bar:52px;--bottom-bar:60px}
 *{box-sizing:border-box;margin:0;padding:0}
@@ -184,6 +185,18 @@ input:focus{border-color:var(--accent)}
 .settings-username{font-size:16px;font-weight:600;color:var(--text)}
 .settings-email{font-size:12px;color:var(--text3);margin-top:2px}
 .pwa-install-row{display:flex;justify-content:space-between;align-items:center;padding:13px 0}
+.util-link{display:flex;justify-content:space-between;align-items:center;padding:13px 0;border-bottom:1px solid var(--border);cursor:pointer;transition:opacity .15s}
+.util-link:last-child{border-bottom:none}
+.util-link:hover{opacity:.75}
+.util-link-left{display:flex;align-items:center;gap:10px}
+.util-link-icon{font-size:16px;width:20px;text-align:center;flex-shrink:0}
+.util-link-lbl{font-size:14px;color:var(--text)}
+.util-link-sub{font-size:11px;color:var(--text3);margin-top:1px}
+.util-arrow{color:var(--text3);font-size:14px}
+.acc-header{display:flex;justify-content:space-between;align-items:center;padding:13px 0;cursor:pointer;border-bottom:1px solid var(--border)}
+.acc-header:hover{opacity:.8}
+.acc-body{padding:12px 0 4px}
+.acc-divider{border-bottom:1px solid var(--border)}
 
 /* ── 계산기 환산 행 ── */
 .cv-content{padding-bottom:calc(var(--bottom-bar) + 60px)}
@@ -255,6 +268,9 @@ input:focus{border-color:var(--accent)}
             <span style="color:var(--text3)">USDT</span>
             <span id="usdt-krw" style="color:var(--text);font-weight:500">-</span>
           </div>
+          <button onclick="showTab('capture')" title="캡처" style="background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:6px 10px;cursor:pointer;color:var(--text2);display:flex;align-items:center">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
+          </button>
         </div>
       </div>
     </div>
@@ -420,6 +436,64 @@ input:focus{border-color:var(--accent)}
     </div>
   </div>
 
+  <!-- 유틸리티 -->
+  <div id="tab-utility" class="hidden">
+    <div class="page-header">
+      <div class="page-title">유틸리티</div>
+      <div class="page-sub">비트코인 최고주의자를 위한 공간</div>
+    </div>
+
+    <div class="s-section-title">Bitcoin 데이터</div>
+    <div class="card" style="margin-bottom:1rem">
+      <div class="util-link" onclick="window.open('https://alternative.me/crypto/fear-and-greed-index/','_blank')">
+        <div class="util-link-left"><span class="util-link-icon">😱</span><div><div class="util-link-lbl">공포 & 탐욕 지수</div><div class="util-link-sub">alternative.me</div></div></div>
+        <span class="util-arrow">›</span>
+      </div>
+      <div class="util-link" onclick="window.open('https://www.coingecko.com/en/global-charts','_blank')">
+        <div class="util-link-left"><span class="util-link-icon">📊</span><div><div class="util-link-lbl">Bitcoin 도미넌스</div><div class="util-link-sub">CoinGecko</div></div></div>
+        <span class="util-arrow">›</span>
+      </div>
+      <div class="util-link" onclick="window.open('https://mempool.space','_blank')">
+        <div class="util-link-left"><span class="util-link-icon">⛏</span><div><div class="util-link-lbl">Mempool 블록 익스플로러</div><div class="util-link-sub">mempool.space</div></div></div>
+        <span class="util-arrow">›</span>
+      </div>
+      <div class="util-link" onclick="window.open('https://lookintobitcoin.com','_blank')">
+        <div class="util-link-left"><span class="util-link-icon">🔍</span><div><div class="util-link-lbl">온체인 분석</div><div class="util-link-sub">lookintobitcoin.com</div></div></div>
+        <span class="util-arrow">›</span>
+      </div>
+    </div>
+
+    <div class="s-section-title">라이트닝 네트워크</div>
+    <div class="card" style="margin-bottom:1rem">
+      <div class="util-link" onclick="window.open('https://amboss.space','_blank')">
+        <div class="util-link-left"><span class="util-link-icon">⚡</span><div><div class="util-link-lbl">Amboss</div><div class="util-link-sub">라이트닝 노드 탐색기</div></div></div>
+        <span class="util-arrow">›</span>
+      </div>
+      <div class="util-link" onclick="window.open('https://1ml.com','_blank')">
+        <div class="util-link-left"><span class="util-link-icon">🔗</span><div><div class="util-link-lbl">1ML</div><div class="util-link-sub">채널 & 노드 통계</div></div></div>
+        <span class="util-arrow">›</span>
+      </div>
+    </div>
+
+    <div class="s-section-title">학습</div>
+    <div class="card" style="margin-bottom:1rem">
+      <div class="util-link" onclick="window.open('https://bitcoin.org/bitcoin.pdf','_blank')">
+        <div class="util-link-left"><span class="util-link-icon">📄</span><div><div class="util-link-lbl">Bitcoin Whitepaper</div><div class="util-link-sub">Satoshi Nakamoto, 2008</div></div></div>
+        <span class="util-arrow">›</span>
+      </div>
+      <div class="util-link" onclick="window.open('https://lopp.net/bitcoin-information.html','_blank')">
+        <div class="util-link-left"><span class="util-link-icon">📚</span><div><div class="util-link-lbl">Bitcoin Resources</div><div class="util-link-sub">Jameson Lopp 큐레이션</div></div></div>
+        <span class="util-arrow">›</span>
+      </div>
+      <div class="util-link" onclick="window.open('https://www.youtube.com/@kkulyanggang','_blank')">
+        <div class="util-link-left"><span class="util-link-icon">🍬</span><div><div class="util-link-lbl">꿀양갱갱갱</div><div class="util-link-sub">CCT 제작 영감 · YouTube</div></div></div>
+        <span class="util-arrow">›</span>
+      </div>
+    </div>
+
+    <div style="text-align:center;font-size:12px;color:var(--text3);font-style:italic;padding:4px 0 8px">Not your keys, not your Bitcoin.</div>
+  </div>
+
   <!-- 설정 -->
   <div id="tab-settings" class="hidden">
 
@@ -491,6 +565,25 @@ input:focus{border-color:var(--accent)}
       </div>
     </div>
 
+    <!-- 스타일 및 화면 -->
+    <div class="s-section-title">스타일 및 화면</div>
+    <div class="card" style="margin-bottom:1rem">
+      <div class="s-row">
+        <div>
+          <div class="s-lbl">시작 페이지</div>
+          <div class="s-sub">앱 열 때 첫 화면</div>
+        </div>
+        <select id="s-startpage" class="s-inp" onchange="saveSettings()">
+          <option value="dashboard">대시보드</option>
+          <option value="capture">캡처</option>
+          <option value="calc">계산기</option>
+          <option value="log">기록</option>
+          <option value="monthly">결산</option>
+          <option value="utility">유틸리티</option>
+        </select>
+      </div>
+    </div>
+
     <!-- 앱 설치 -->
     <div class="s-section-title">앱 설치</div>
     <div class="card" style="margin-bottom:1rem">
@@ -508,14 +601,51 @@ input:focus{border-color:var(--accent)}
     <!-- 정보 -->
     <div class="s-section-title">정보</div>
     <div class="card" style="margin-bottom:2rem">
+
+      <!-- 개발자 후원 아코디언 -->
+      <div class="acc-divider">
+        <div class="acc-header" onclick="toggleAccordion('acc-support')">
+          <div class="s-lbl">⚡ 개발자 후원</div>
+          <span id="acc-support-arrow" style="color:var(--text3);font-size:18px;line-height:1;transition:transform .2s">›</span>
+        </div>
+        <div id="acc-support" style="display:none" class="acc-body">
+          <div style="text-align:center;padding:8px 0 12px">
+            <canvas id="qr-canvas" style="border-radius:10px;max-width:180px;width:100%"></canvas>
+            <div style="font-size:11px;color:var(--text3);margin:8px 0 10px">hash@walletofsatoshi.com</div>
+            <button onclick="copyLightning()" class="btn btn-p" style="font-size:13px">⚡ 라이트닝 주소 복사</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 리소스 출처 아코디언 -->
+      <div class="acc-divider">
+        <div class="acc-header" onclick="toggleAccordion('acc-sources')">
+          <div class="s-lbl">&lt;/&gt; 리소스 출처</div>
+          <span id="acc-sources-arrow" style="color:var(--text3);font-size:18px;line-height:1;transition:transform .2s">›</span>
+        </div>
+        <div id="acc-sources" style="display:none" class="acc-body">
+          <div style="font-size:12px;color:var(--text3);line-height:2">
+            · BTC 가격: Upbit, Bithumb, Binance, Coinbase<br>
+            · KRW/USDT 환율: Bithumb, Upbit 실시간<br>
+            · 공포 & 탐욕: alternative.me<br>
+            · 도미넌스: CoinGecko
+          </div>
+        </div>
+      </div>
+
+      <!-- 피드백 -->
+      <div class="s-row" onclick="window.open('https://x.com/activeriti','_blank')" style="cursor:pointer">
+        <div class="s-lbl">𝕏 피드백</div>
+        <span style="color:var(--text3);font-size:18px;line-height:1">›</span>
+      </div>
+
+      <!-- 버전 -->
       <div class="s-row">
         <div class="s-lbl">버전</div>
         <span style="font-size:13px;color:var(--text3)">v1.0.0</span>
       </div>
-      <div class="s-row">
-        <div class="s-lbl">개발자</div>
-        <span style="font-size:13px;color:var(--text3)">@activeriti</span>
-      </div>
+
+      <!-- 로그아웃 -->
       <div class="s-row" style="border-bottom:none">
         <div class="s-lbl" style="color:var(--red)">로그아웃</div>
         <button onclick="doLogout()" style="background:none;border:1px solid var(--red-dim);border-radius:8px;padding:6px 14px;color:var(--red);font-size:13px;cursor:pointer;font-family:var(--font)">로그아웃</button>
@@ -533,21 +663,21 @@ input:focus{border-color:var(--accent)}
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="2" y="2" width="9" height="9" rx="1.5"/><rect x="13" y="2" width="9" height="9" rx="1.5"/><rect x="2" y="13" width="9" height="9" rx="1.5"/><rect x="13" y="13" width="9" height="9" rx="1.5"/></svg>
     <span>대시보드</span>
   </button>
-  <button class="bottom-tab" onclick="showTab('capture')">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
-    <span>캡처</span>
+  <button class="bottom-tab" onclick="showTab('log')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 6h18M3 12h12M3 18h9"/></svg>
+    <span>기록</span>
   </button>
   <button class="bottom-tab" onclick="showTab('calc')">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="2" width="16" height="20" rx="2"/><path d="M8 7h8M8 12h8M8 17h4"/></svg>
     <span>계산기</span>
   </button>
-  <button class="bottom-tab" onclick="showTab('log')">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 6h18M3 12h12M3 18h9"/></svg>
-    <span>기록</span>
-  </button>
   <button class="bottom-tab" onclick="showTab('monthly')">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="2" y="4" width="20" height="18" rx="2"/><path d="M8 2v4M16 2v4M2 10h20"/></svg>
     <span>결산</span>
+  </button>
+  <button class="bottom-tab" onclick="showTab('utility')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.22 4.22l2.12 2.12M17.66 17.66l2.12 2.12M2 12h3M19 12h3M4.22 19.78l2.12-2.12M17.66 6.34l2.12-2.12"/></svg>
+    <span>유틸리티</span>
   </button>
 </nav>
 

@@ -5,6 +5,7 @@ const DEFAULT_S = {
   startDate: new Date().toISOString().slice(0,10),
   seed: 100, fx: 1400, goal: 10000, fxAuto: true,
   currency: 'KRW/USD', domestic: 'bithumb', overseas: 'binance',
+  startPage: 'dashboard',
 };
 
 let S = {...DEFAULT_S}, E = [], currentUser = null, lineChart = null;
@@ -123,6 +124,7 @@ async function loadFromDB() {
   const { data: ed } = await db.from('cct_entries').select('*').eq('user_id', currentUser.id).order('date', { ascending: true });
   if (ed) E = ed.map(r => ({ date: r.date, asset: +r.asset, memo: r.memo || '' }));
   if (S.fxAuto) await fetchFx(); else render();
+  if (S.startPage && S.startPage !== 'dashboard') showTab(S.startPage);
   fetchMarketPrices().then(p => {
     if (p.btc) {
       calcBtcPrice = p.btc;
@@ -304,9 +306,11 @@ function renderSettingsForm() {
   const cur = document.getElementById('s-currency');
   const dom = document.getElementById('s-domestic');
   const ov  = document.getElementById('s-overseas');
+  const sp  = document.getElementById('s-startpage');
   if (cur) cur.value = S.currency;
   if (dom) dom.value = S.domestic;
   if (ov)  ov.value  = S.overseas;
+  if (sp)  sp.value  = S.startPage || 'dashboard';
   const toggle = document.getElementById('fx-toggle');
   const knob   = document.getElementById('fx-knob');
   const lbl    = document.getElementById('fx-toggle-lbl');
@@ -323,8 +327,8 @@ function renderSettingsForm() {
 }
 
 // ── 탭 ───────────────────────────────────────
-// 순서 = 하단바 버튼 순서와 일치: 대시보드|캡처|계산기|기록|결산|설정
-const TABS = ['dashboard','capture','calc','log','monthly','settings'];
+// 순서 = 하단바 버튼 순서와 일치: 대시보드|기록|계산기|결산|유틸리티|설정 (+capture는 인덱스 없음)
+const TABS = ['dashboard','log','calc','monthly','utility','settings','capture'];
 function showTab(name) {
   if (name !== currentTab) { prevTab = currentTab; currentTab = name; }
   TABS.forEach((t, i) => {
@@ -338,6 +342,31 @@ function showTab(name) {
 
 const GEAR_SVG = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>`;
 const BACK_SVG = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>`;
+
+const LIGHTNING_ADDRESS = 'hash@walletofsatoshi.com';
+
+function copyLightning() {
+  navigator.clipboard.writeText(LIGHTNING_ADDRESS).then(() => toast('⚡ 라이트닝 주소 복사됨'));
+}
+
+function toggleAccordion(id) {
+  const body  = document.getElementById(id);
+  const arrow = document.getElementById(id + '-arrow');
+  const open  = body.style.display === 'none';
+  body.style.display = open ? 'block' : 'none';
+  if (arrow) arrow.style.transform = open ? 'rotate(90deg)' : '';
+  if (open && id === 'acc-support') generateQR();
+}
+
+function generateQR() {
+  const canvas = document.getElementById('qr-canvas');
+  if (!canvas || canvas.dataset.generated) return;
+  if (typeof QRCode === 'undefined') return;
+  QRCode.toCanvas(canvas, 'lightning:' + LIGHTNING_ADDRESS, {
+    width: 180, margin: 2,
+    color: { dark: '#000000', light: '#ffffff' }
+  }, () => { canvas.dataset.generated = '1'; });
+}
 
 function updateTopBar() {
   const btn = document.querySelector('.top-bar-settings');
@@ -397,6 +426,7 @@ function saveSettings() {
   S.currency  = document.getElementById('s-currency')?.value || S.currency;
   S.domestic  = document.getElementById('s-domestic')?.value || S.domestic;
   S.overseas  = document.getElementById('s-overseas')?.value || S.overseas;
+  S.startPage = document.getElementById('s-startpage')?.value || S.startPage;
   if (!S.fxAuto) S.fx = parseInt(document.getElementById('s-fx')?.value) || S.fx;
   else fetchFx();
   persist(); render();
