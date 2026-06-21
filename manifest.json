@@ -2,7 +2,7 @@
   "name": "CCT - Crypto Currency Trader",
   "short_name": "CCT",
   "description": "비트코인 매매 일지 & 환산 계산기",
-  "start_url": "/index.html",
+  "start_url": "/",
   "display": "standalone",
   "orientation": "portrait-primary",
   "background_color": "#0f1117",

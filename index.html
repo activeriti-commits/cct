@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>CCT — Crypto Currency Trader</title>
 <link rel="manifest" href="./manifest.json">
+<link rel="icon" type="image/png" sizes="192x192" href="./icon-192.png">
+<link rel="apple-touch-icon" href="./icon-192.png">
 <meta name="theme-color" content="#161b27">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -762,18 +764,18 @@ async function doCapture(){
   const refreshToken = params.get('refresh_token');
 
   if (type === 'recovery' && accessToken) {
-    // 비번 재설정 — 새 비번 입력 모달
     await window._supabase.auth.setSession({ access_token: accessToken, refresh_token: refreshToken });
+    history.replaceState(null, '', location.pathname);
     showResetModal();
     return;
   }
 
   if (type === 'signup' && accessToken) {
-    // 이메일 인증 완료 — 바로 로그인
     await window._supabase.auth.setSession({ access_token: accessToken, refresh_token: refreshToken });
-    window.history.replaceState({}, document.title, window.location.pathname);
-    // 세션 확인 후 정상 진행
   }
+
+  // hash 잔여물 제거
+  if (location.hash) history.replaceState(null, '', location.pathname);
 
   window._supabase.auth.getSession().then(({data:{session}})=>{
     if(!session) location.href='./auth.html';
