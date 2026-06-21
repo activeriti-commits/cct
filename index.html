@@ -216,6 +216,7 @@ input:focus{border-color:var(--accent)}
 .rate-strip{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:1.25rem}
 .rate-chip{background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:7px 12px;font-size:12px;display:flex;align-items:center;gap:6px}
 .rate-lbl{color:var(--text3)}
+.rate-src{font-size:9px;color:var(--text3);display:block;margin-top:1px;letter-spacing:.02em}
 .rate-val{color:var(--text);font-weight:500}
 /* ── 김치 프리미엄 ── */
 .prem-row{display:flex;justify-content:space-between;align-items:flex-start;padding:10px 0;border-bottom:1px solid var(--border)}
@@ -348,10 +349,6 @@ input:focus{border-color:var(--accent)}
             <span style="color:var(--text3)">BTC</span>
             <span id="btc-price" style="color:var(--text);font-weight:500">-</span>
           </div>
-          <button onclick="showTab('premium')" title="김치 프리미엄" style="background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:6px 10px;cursor:pointer;display:flex;align-items:center;gap:4px;font-family:var(--font)">
-            <span style="font-size:11px;color:var(--text3)">₩</span>
-            <span id="dash-prem-btn" style="font-size:12px;font-weight:700;color:var(--text2)">-</span>
-          </button>
           <button onclick="showTab('capture')" title="캡처" style="background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:6px 10px;cursor:pointer;color:var(--text2);display:flex;align-items:center">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
           </button>
@@ -360,9 +357,18 @@ input:focus{border-color:var(--accent)}
     </div>
     <!-- 환율 & 김치 프리미엄 스트립 -->
     <div class="rate-strip">
-      <div class="rate-chip"><span class="rate-lbl">USDT/KRW</span><span id="usdt-krw" class="rate-val">-</span></div>
-      <div class="rate-chip"><span class="rate-lbl">USD/KRW</span><span id="usd-krw" class="rate-val">-</span></div>
-      <div class="rate-chip"><span class="rate-lbl">김치 프리미엄</span><span id="dash-kimchi" class="rate-val">-</span></div>
+      <div class="rate-chip">
+        <div><span class="rate-lbl">USDT/KRW</span><span class="rate-src" id="usdt-krw-src">업비트</span></div>
+        <span id="usdt-krw" class="rate-val">-</span>
+      </div>
+      <div class="rate-chip">
+        <div><span class="rate-lbl">USD/KRW</span><span class="rate-src">외환 API</span></div>
+        <span id="usd-krw" class="rate-val">-</span>
+      </div>
+      <div class="rate-chip" onclick="showTab('premium')" style="cursor:pointer;border-color:rgba(61,126,255,.2)">
+        <div><span class="rate-lbl">김치 프리미엄</span><span class="rate-src">업비트 / 바이낸스</span></div>
+        <span id="dash-kimchi" class="rate-val">-</span>
+      </div>
     </div>
     <div class="g2" id="r1"></div>
     <div class="g2" id="r2"></div>
@@ -609,6 +615,26 @@ input:focus{border-color:var(--accent)}
       </div>
     </div>
 
+    <!-- 난이도 조정 -->
+    <div class="mp-section-title">채굴 난이도 조정</div>
+    <div class="card" style="margin-bottom:1rem;padding:0.9rem 1.25rem">
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;text-align:center">
+        <div>
+          <div style="font-size:11px;color:var(--text3);letter-spacing:.04em;margin-bottom:4px">예상 변화</div>
+          <div style="font-size:18px;font-weight:700" id="mp-diff-change">-</div>
+        </div>
+        <div>
+          <div style="font-size:11px;color:var(--text3);letter-spacing:.04em;margin-bottom:4px">남은 블록</div>
+          <div style="font-size:18px;font-weight:700;color:var(--text)" id="mp-diff-remain">-</div>
+        </div>
+        <div>
+          <div style="font-size:11px;color:var(--text3);letter-spacing:.04em;margin-bottom:4px">평균 간격</div>
+          <div style="font-size:18px;font-weight:700;color:var(--text)" id="mp-diff-avg">-</div>
+        </div>
+      </div>
+      <div style="font-size:10px;color:var(--text3);text-align:right;margin-top:8px">mempool.space</div>
+    </div>
+
     <!-- 최근 블록 -->
     <div class="mp-section-title">최근 블록</div>
     <div class="mp-blocks-scroll" id="mp-blocks-row">
@@ -733,7 +759,7 @@ input:focus{border-color:var(--accent)}
     <div class="card" style="margin-bottom:1rem">
       <div id="fx-loading" style="font-size:13px;color:var(--text3);text-align:center;padding:8px 0">불러오는 중...</div>
       <div id="fx-grid" class="fx-grid" style="display:none"></div>
-      <div style="margin-top:12px;font-size:11px;color:var(--text3);text-align:right">jsDelivr exchange-api</div>
+      <div style="margin-top:12px;font-size:11px;color:var(--text3);text-align:right" id="fx-src-label">fawazahmed0/currency-api</div>
     </div>
 
     <!-- 암호화폐 시가총액 -->

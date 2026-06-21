@@ -2,7 +2,7 @@
 
 **CCT (Crypto Currency Trader)** — 비트코인 매매 일지 웹앱  
 스택: Vanilla HTML/CSS/JS · Supabase (Auth + DB) · Vercel 배포  
-배포: https://cct-chi.vercel.app
+배포: https://bcct.app (메인) · https://cct-chi.vercel.app
 
 ---
 
@@ -25,7 +25,8 @@
 - PC 사이드바 → 통합 하단 탭바 (모바일/데스크탑 동일, only-btc.app 참고)
 - 상단 헤더: CCT 로고 + 닉네임 + ⚙ 설정 아이콘
 - 설정/캡처/BIP39 진입 시 ⚙ → ← 뒤로가기 아이콘 전환, `prevTab` 추적
-- 하단 탭 5개: 대시보드 | 기록 | 계산기(가운데) | 결산 | 유틸리티
+- 하단 탭 5개: 대시보드 | 기록 | 계산기(가운데) | 멤풀 | 유틸리티
+- 월별결산은 기록 탭 내부에 버튼으로 접근 (캡처 패턴과 동일)
 
 ### 대시보드
 - 6개 메트릭 카드: 현재총자산 / 총수익률 / 총수익(USDT) / 원화환산 / 투자기간 / 역대최고수익
@@ -57,6 +58,18 @@
 - 각 단어 → 인덱스(1-2048) → 11비트 이진수 변환 → 점(●/○)으로 시각화 (4-4-3 그룹)
 - 접두사 검색: `Array.filter(w => w.startsWith(query))`로 실시간 필터링
 
+### 멤풀 탭
+- `https://mempool.space/api/blocks/tip/height` — 현재 블록 높이 실시간 표시
+- `https://mempool.space/api/v1/fees/recommended` — fastestFee / halfHourFee / hourFee (sat/vB)
+- 다음 반감기 블록: 1,050,000. 잔여 = `1,050,000 - height`, 예상 날짜 = `Date.now() + remain × 10분`
+- 반감기 정보 아코디언: CSS `max-height` 트랜지션으로 이징 애니메이션 (`cubic-bezier(.4,0,.2,1)`)
+- 30초 캐시로 과도한 API 호출 방지
+
+### 계산기 Sats/USD 역산
+- 헤더에 `1 USD = xxxx Sats` 표시 (BTC 스탠다드 관점)
+- 계산식: `Math.round(100,000,000 / calcBtcPrice)`
+- `updateSatsPerUsd()` — BTC 가격 갱신 시마다 호출
+
 ### PWA
 - `manifest.json` + 아이콘(192/512px): 홈 화면 설치 지원
 - `beforeinstallprompt` 이벤트 캡처 → 첫 방문 시 배너 표시 (localStorage로 중복 표시 방지)
@@ -66,6 +79,30 @@
 - `hash@walletofsatoshi.com` Lightning 주소
 - QR 코드: 브랜딩된 이미지(`qr-lightning.png`) 정적 파일로 제공 (초기 qrcode.js canvas → img 태그로 교체)
 - 클립보드 복사: `navigator.clipboard.writeText(LIGHTNING_ADDRESS)`
+
+---
+
+## 유틸리티 탭 구성
+
+| 섹션 | 내용 | API/출처 |
+|------|------|---------|
+| 시장 위험지표 | 공포&탐욕 지수 (게이지) + BTC 도미넌스 | alternative.me/fng · CoinGecko |
+| 외환 시장 | USD/KRW · JPY · EUR · CNY · GBP · SGD | fawazahmed0/currency-api (jsDelivr CDN) |
+| 암호화폐 시가총액 | Top 100 실시간 (60초 캐시) | CoinGecko /coins/markets |
+| 글로벌 자산 시가총액 | 기업·귀금속·암호화폐·ETF 링크 | companiesmarketcap.com |
+| Bitcoin 데이터 링크 | mempool.space · lookintobitcoin · alternative.me | - |
+| 학습 링크 | Whitepaper · Lopp 큐레이션 · BIP39 | - |
+
+## 멤풀 탭 구성
+
+| 섹션 | API |
+|------|-----|
+| 블록 높이 (헤더) | mempool.space/api/blocks/tip/height |
+| 수수료 3단계 | mempool.space/api/v1/fees/recommended |
+| 난이도 조정 | mempool.space/api/v1/difficulty-adjustment |
+| 최근 블록 가로 스크롤 | mempool.space/api/blocks |
+| 반감기 카운트다운 + 프로그레스 바 | 계산 (1,050,000 − height) |
+| 반감기 전체 일정 아코디언 | 하드코딩 (34회 테이블) |
 
 ---
 
@@ -123,7 +160,10 @@
 | 항목 | 값 |
 |------|-----|
 | Supabase 프로젝트 ID | `zuodnwysgnhrvjgnyaak` |
-| 배포 URL | `https://cct-chi.vercel.app` |
-| Auth 리디렉트 URL | `https://cct-chi.vercel.app/auth.html` |
+| 메인 도메인 | `https://bcct.app` (GoDaddy, $20.19, .app HSTS) |
+| 배포 URL | `https://cct-chi.vercel.app` (백업) |
+| DNS A 레코드 | `@` → `216.198.79.1` (Vercel) |
+| Supabase Site URL | `https://bcct.app` |
+| Auth 리디렉트 URL | `https://bcct.app/auth.html` |
 | Resend SMTP Host | `smtp.resend.com` / Port `465` / TLS |
 | Google OAuth Redirect URI | `https://zuodnwysgnhrvjgnyaak.supabase.co/auth/v1/callback` |

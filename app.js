@@ -103,7 +103,7 @@ async function fetchMarketPrices() {
       ? fetch('https://api.coinbase.com/v2/prices/BTC-USD/spot').then(r=>r.json()).then(d=>({btc:parseFloat(d.data.amount)}))
       : fetch('https://api.binance.com/api/v3/ticker/price?symbol=BTCUSDT').then(r=>r.json()).then(d=>({btc:parseFloat(d.price)}))),
     fetch('https://api.upbit.com/v1/ticker?markets=KRW-BTC').then(r=>r.json()).then(d=>({krwBtc:d[0].trade_price})),
-    fetch('https://cdn.jsdelivr.net/gh/fawazahmed0/exchange-api@1/latest/currencies/usd/krw.json').then(r=>r.json()).then(d=>({usdKrw:d.krw}))
+    fetch('https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/usd/krw.json').then(r=>r.json()).then(d=>({usdKrw:d.usd.krw}))
   ]);
   const r = {};
   if (btcRes.status==='fulfilled') Object.assign(r, btcRes.value);
@@ -143,6 +143,8 @@ async function loadFromDB() {
     }
     const usdt = document.getElementById('usdt-krw');
     if (usdt && S.fx) usdt.textContent = '₩' + S.fx.toLocaleString();
+    const usdtSrc = document.getElementById('usdt-krw-src');
+    if (usdtSrc) usdtSrc.textContent = S.domestic === 'upbit' ? '업비트' : '빗썸';
     updatePremiumDisplay();
     updateSatsPerUsd();
   });
@@ -488,7 +490,6 @@ function updatePremiumDisplay() {
   };
 
   set('dash-kimchi', fmtPct, color);
-  set('dash-prem-btn', fmtPct, color);
   set('prem-pct', fmtPct, color);
   set('calc-prem-badge', fmtPct, color);
   set('prem-diff-krw', (premDiff >= 0 ? '+' : '') + Math.round(premDiff).toLocaleString() + ' KRW', color);
@@ -498,11 +499,9 @@ function updatePremiumDisplay() {
   set('prem-os-krw', overseasKrw.toLocaleString() + ' KRW');
   set('prem-os-usd', Math.round(calcBtcPrice).toLocaleString() + ' USD');
   set('prem-fx', '₩' + Math.round(realFx).toLocaleString());
-  // USD/KRW 대시보드 — API 실패 시 S.fx(USDT/KRW) 폴백
+  // USD/KRW 대시보드 — 실제 forex 값만 표시 (USDT와 혼동 방지)
   const usdKrwEl = document.getElementById('usd-krw');
-  if (usdKrwEl && (!realUsdKrw || usdKrwEl.textContent === '-')) {
-    usdKrwEl.textContent = '₩' + Math.round(realFx).toLocaleString();
-  }
+  if (usdKrwEl && realUsdKrw) usdKrwEl.textContent = '₩' + Math.round(realUsdKrw).toLocaleString();
   // 프리미엄 탭 환율 칩
   set('prem-usdt-krw', '₩' + fx.toLocaleString());
   set('prem-usd-krw', '₩' + Math.round(realFx).toLocaleString());
@@ -522,10 +521,11 @@ let _mempoolCacheAt = 0;
 async function fetchAndRenderMempool() {
   if (Date.now() - _mempoolCacheAt < 30000) return;
   const HALVING_START = 840_000;
-  const [heightRes, feesRes, blocksRes] = await Promise.allSettled([
+  const [heightRes, feesRes, blocksRes, diffRes] = await Promise.allSettled([
     fetch('https://mempool.space/api/blocks/tip/height').then(r => r.json()),
     fetch('https://mempool.space/api/v1/fees/recommended').then(r => r.json()),
     fetch('https://mempool.space/api/blocks').then(r => r.json()),
+    fetch('https://mempool.space/api/v1/difficulty-adjustment').then(r => r.json()),
   ]);
   if (heightRes.status === 'fulfilled') {
     const height = heightRes.value;
@@ -551,6 +551,18 @@ async function fetchAndRenderMempool() {
     set('mp-fee-fast', f.fastestFee);
     set('mp-fee-half', f.halfHourFee);
     set('mp-fee-hour', f.hourFee);
+  }
+  if (diffRes.status === 'fulfilled') {
+    const d = diffRes.value;
+    const set = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+    const chg = d.difficultyChange;
+    const sign = chg >= 0 ? '+' : '';
+    const avgMin = d.timeAvg ? (d.timeAvg / 60000).toFixed(1) : '-';
+    set('mp-diff-change', sign + chg.toFixed(2) + '%');
+    set('mp-diff-remain', (d.remainingBlocks ?? '-') + ' 블록');
+    set('mp-diff-avg', avgMin + '분 / 블록');
+    const chgEl = document.getElementById('mp-diff-change');
+    if (chgEl) chgEl.style.color = chg >= 0 ? 'var(--red)' : 'var(--green)';
   }
   if (blocksRes.status === 'fulfilled') {
     const blocks = blocksRes.value.slice(0, 8);
@@ -592,22 +604,25 @@ async function loadFxRates(force = false) {
   const updated = document.getElementById('fx-updated');
   if (!grid) return;
   try {
-    const res = await fetch('https://cdn.jsdelivr.net/gh/fawazahmed0/exchange-api@1/latest/currencies/usd.json');
+    const res = await fetch('https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/usd.json');
     if (!res.ok) throw new Error();
     const d = await res.json();
+    const fx = d.usd;
     const pairs = [
-      { pair: 'USD/KRW', val: d.usd.krw, fmt: v => '₩' + Math.round(v).toLocaleString() },
-      { pair: 'USD/JPY', val: d.usd.jpy, fmt: v => '¥' + v.toFixed(2) },
-      { pair: 'USD/EUR', val: d.usd.eur, fmt: v => '€' + v.toFixed(4) },
-      { pair: 'USD/CNY', val: d.usd.cny, fmt: v => '¥' + v.toFixed(4) },
-      { pair: 'USD/GBP', val: d.usd.gbp, fmt: v => '£' + v.toFixed(4) },
-      { pair: 'USD/SGD', val: d.usd.sgd, fmt: v => 'S$' + v.toFixed(4) },
+      { pair: 'USD/KRW', src: '외환 API', val: fx.krw, fmt: v => '₩' + Math.round(v).toLocaleString() },
+      { pair: 'USD/JPY', src: '외환 API', val: fx.jpy, fmt: v => '¥' + v.toFixed(2) },
+      { pair: 'USD/EUR', src: '외환 API', val: fx.eur, fmt: v => '€' + v.toFixed(4) },
+      { pair: 'USD/CNY', src: '외환 API', val: fx.cny, fmt: v => '¥' + v.toFixed(4) },
+      { pair: 'USD/GBP', src: '외환 API', val: fx.gbp, fmt: v => '£' + v.toFixed(4) },
+      { pair: 'USD/SGD', src: '외환 API', val: fx.sgd, fmt: v => 'S$' + v.toFixed(4) },
     ];
     grid.innerHTML = pairs.map(p => `
       <div class="fx-card">
         <div class="fx-pair">${p.pair}</div>
         <div class="fx-rate">${p.val ? p.fmt(p.val) : '-'}</div>
       </div>`).join('');
+    const src = document.getElementById('fx-src-label');
+    if (src) src.textContent = 'fawazahmed0/currency-api · jsDelivr CDN';
     if (loading) loading.style.display = 'none';
     grid.style.display = '';
     _fxCacheAt = Date.now();
