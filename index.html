@@ -617,12 +617,12 @@ input:focus{border-color:var(--accent)}
 
     <!-- Top Assets by Market Cap -->
     <div style="display:flex;justify-content:space-between;align-items:center;padding:0 0 8px">
-      <div class="s-section-title" style="padding:0;margin:0">시가총액 Top 10</div>
+      <div class="s-section-title" style="padding:0;margin:0">시가총액 Top 100</div>
       <span id="top-assets-updated" style="font-size:11px;color:var(--text3)"></span>
     </div>
     <div class="card" style="margin-bottom:1rem;padding:0;overflow:hidden">
       <div id="top-assets-loading" style="padding:1.25rem 1.5rem;text-align:center;font-size:13px;color:var(--text3)">불러오는 중...</div>
-      <div id="top-assets-list" style="display:none"></div>
+      <div id="top-assets-list" style="display:none;max-height:480px;overflow-y:auto"></div>
       <div style="border-top:1px solid var(--border);padding:10px 16px;display:flex;justify-content:space-between;align-items:center">
         <span style="font-size:11px;color:var(--text3)">CoinGecko</span>
         <button onclick="loadTopAssets(true)" style="background:none;border:none;color:var(--accent);font-size:12px;cursor:pointer;font-family:var(--font);padding:2px 0">↻ 새로고침</button>
