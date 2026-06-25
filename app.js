@@ -61,6 +61,10 @@ db.auth.onAuthStateChange(async (event, session) => {
   } else {
     applyTheme(S.theme || 'system');
     render();
+    fetchFx().then(() => {
+      const usdt = document.getElementById('usdt-krw');
+      if (usdt && S.fx) usdt.textContent = '₩' + S.fx.toLocaleString();
+    });
     fetchMarketPrices().then(p => {
       if (p.btc) { calcBtcPrice = p.btc; const el = document.getElementById('btc-price'); if (el) el.textContent = '$' + Math.round(p.btc).toLocaleString(); }
       if (p.krwBtc) calcKrwBtcPrice = p.krwBtc;
@@ -379,7 +383,7 @@ function showTab(name) {
   });
   if (name === 'calc') showCalcBar();
   if (name === 'mempool') fetchAndRenderMempool();
-  if (name === 'utility') { loadTopAssets(); loadMarketIndicators(); loadFxRates(); loadMetalPrices(); }
+  if (name === 'utility') { loadTopAssets(); loadFxRates(); loadMetalPrices(); setTimeout(loadMarketIndicators, 1000); }
   updateTopBar();
 }
 
@@ -474,7 +478,7 @@ function saveSettings() {
   if (!S.fxAuto) S.fx = parseInt(document.getElementById('s-fx')?.value) || S.fx;
   else fetchFx();
   persist(); render();
-  toast('설정이 저장됐어요');
+  toast(currentUser ? '설정이 저장됐어요' : '로그인하면 설정이 저장됩니다', currentUser ? 'ok' : 'err');
 }
 
 function resetAll() {
