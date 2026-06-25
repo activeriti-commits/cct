@@ -801,6 +801,7 @@ input:focus{border-color:var(--accent)}
     </div>
 
     <!-- 원자재 가격 -->
+    <div id="metals-wrap">
     <div class="util-section-hdr" style="margin-bottom:8px">
       <div class="s-section-title" style="padding:0;margin:0">원자재 가격</div>
       <span id="metals-updated" style="font-size:11px;color:var(--text3)"></span>
@@ -809,9 +810,10 @@ input:focus{border-color:var(--accent)}
       <div id="metals-loading" style="font-size:13px;color:var(--text3);text-align:center;padding:8px 0">불러오는 중...</div>
       <div id="metals-grid" class="fx-grid" style="display:none"></div>
       <div style="border-top:1px solid var(--border);margin-top:12px;padding-top:10px;display:flex;justify-content:space-between;align-items:center">
-        <span style="font-size:11px;color:var(--text3)">Kraken · USD/트로이온스</span>
+        <span style="font-size:11px;color:var(--text3)">MEXC · USDT 기준 / 트로이온스</span>
         <button onclick="loadMetalPrices(true)" style="background:none;border:none;color:var(--accent);font-size:12px;cursor:pointer;font-family:var(--font)">↻ 새로고침</button>
       </div>
+    </div>
     </div>
 
     <!-- 외환 시장 -->

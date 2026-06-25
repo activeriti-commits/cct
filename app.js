@@ -235,7 +235,7 @@ function render() {
     M('총 수익률', sgn(last.cumPct, 2) + '%', last.cumPct >= 0 ? 'pos lg' : 'neg lg');
 
   document.getElementById('r2').innerHTML =
-    M('총 수익 (USDT)', sgn(last.cumPnl), last.cumPnl >= 0 ? 'pos' : 'neg') +
+    M('총 수익 (USDT)', (last.cumPnl >= 0 ? '+$' : '-$') + Math.abs(last.cumPnl).toFixed(2), last.cumPnl >= 0 ? 'pos' : 'neg') +
     M('원화 환산', krwFmt(last.krw), '', '현재 총자산 기준');
 
   document.getElementById('r3').innerHTML =
@@ -694,20 +694,20 @@ function renderFxGrid() {
   const isKRW = _fxBase === 'KRW';
   const pairs = !isKRW
     ? [
-        { pair: 'USD/KRW', val: r.KRW, fmt: v => '₩' + Math.round(v).toLocaleString() },
-        { pair: 'USD/JPY', val: r.JPY, fmt: v => '¥' + v.toFixed(2) },
-        { pair: 'USD/EUR', val: r.EUR, fmt: v => '€' + v.toFixed(4) },
-        { pair: 'USD/CNY', val: r.CNY, fmt: v => '¥' + v.toFixed(4) },
-        { pair: 'USD/GBP', val: r.GBP, fmt: v => '£' + v.toFixed(4) },
-        { pair: 'USD/SGD', val: r.SGD, fmt: v => 'S$' + v.toFixed(4) },
+        { pair: '1 USD → 원화 (KRW)', val: r.KRW, fmt: v => '₩' + Math.round(v).toLocaleString() },
+        { pair: '1 USD → 엔화 (JPY)', val: r.JPY, fmt: v => '¥' + v.toFixed(2) },
+        { pair: '1 USD → 유로 (EUR)', val: r.EUR, fmt: v => '€' + v.toFixed(4) },
+        { pair: '1 USD → 위안 (CNY)', val: r.CNY, fmt: v => '¥' + v.toFixed(4) },
+        { pair: '1 USD → 파운드 (GBP)', val: r.GBP, fmt: v => '£' + v.toFixed(4) },
+        { pair: '1 USD → 싱달러 (SGD)', val: r.SGD, fmt: v => 'S$' + v.toFixed(4) },
       ]
     : [
-        { pair: 'USD/원',        val: r.USD, fmt: v => '₩' + Math.round(v).toLocaleString() },
-        { pair: 'JPY (×100)/원', val: r.JPY, fmt: v => '₩' + Math.round(v * 100).toLocaleString() },
-        { pair: 'EUR/원',        val: r.EUR, fmt: v => '₩' + Math.round(v).toLocaleString() },
-        { pair: 'CNY/원',        val: r.CNY, fmt: v => '₩' + Math.round(v).toLocaleString() },
-        { pair: 'GBP/원',        val: r.GBP, fmt: v => '₩' + Math.round(v).toLocaleString() },
-        { pair: 'SGD/원',        val: r.SGD, fmt: v => '₩' + Math.round(v).toLocaleString() },
+        { pair: '1달러 (USD)',     val: r.USD, fmt: v => '₩' + Math.round(v).toLocaleString() },
+        { pair: '100엔 (JPY)',     val: r.JPY, fmt: v => '₩' + Math.round(v * 100).toLocaleString() },
+        { pair: '1유로 (EUR)',     val: r.EUR, fmt: v => '₩' + Math.round(v).toLocaleString() },
+        { pair: '1위안 (CNY)',     val: r.CNY, fmt: v => '₩' + Math.round(v).toLocaleString() },
+        { pair: '1파운드 (GBP)',   val: r.GBP, fmt: v => '₩' + Math.round(v).toLocaleString() },
+        { pair: '1싱달러 (SGD)',   val: r.SGD, fmt: v => '₩' + Math.round(v).toLocaleString() },
       ];
   grid.innerHTML = pairs.map(p => `
     <div class="fx-card">
@@ -763,25 +763,26 @@ async function loadMetalPrices(force = false) {
   const grid    = document.getElementById('metals-grid');
   const updated = document.getElementById('metals-updated');
   if (!grid) return;
+  const wrap = document.getElementById('metals-wrap');
   try {
-    const [goldRes, silverRes] = await Promise.allSettled([
-      fetch('https://api.kraken.com/0/public/Ticker?pair=XAUUSD').then(r => r.json()),
-      fetch('https://api.kraken.com/0/public/Ticker?pair=XAGUSD').then(r => r.json()),
-    ]);
-    const parseKraken = res => {
-      if (res.status !== 'fulfilled' || res.value.error?.length) return null;
-      const first = Object.values(res.value.result || {})[0];
-      return first ? parseFloat(first.c?.[0]) : null;
+    const fetchMexc = async sym => {
+      const r = await fetch(`https://api.mexc.com/api/v3/ticker/price?symbol=${sym}`);
+      const d = await r.json();
+      return d.price ? parseFloat(d.price) : null;
     };
-    const gold = parseKraken(goldRes);
-    const silver = parseKraken(silverRes);
+    const [goldR, silverR] = await Promise.allSettled([
+      fetchMexc('XAUUSDT'),
+      fetchMexc('XAGUUSDT'),
+    ]);
+    const gold   = goldR.status   === 'fulfilled' ? goldR.value   : null;
+    const silver = silverR.status === 'fulfilled' ? silverR.value : null;
     if (!gold && !silver) throw new Error('no data');
     grid.innerHTML = [
-      { pair: '금 (XAU/oz)', val: gold,   fmt: v => '$' + Math.round(v).toLocaleString() },
-      { pair: '은 (XAG/oz)', val: silver, fmt: v => '$' + v.toFixed(2) },
-    ].map(p => `<div class="fx-card">
+      { pair: '금 (Gold)',   val: gold,   fmt: v => '$' + Math.round(v).toLocaleString() + ' / 트로이온스' },
+      { pair: '은 (Silver)', val: silver, fmt: v => '$' + v.toFixed(2) + ' / 트로이온스' },
+    ].filter(p => p.val != null).map(p => `<div class="fx-card">
       <div class="fx-pair">${p.pair}</div>
-      <div class="fx-rate">${p.val != null ? p.fmt(p.val) : '-'}</div>
+      <div class="fx-rate">${p.fmt(p.val)}</div>
     </div>`).join('');
     if (loading) loading.style.display = 'none';
     grid.style.display = '';
@@ -791,7 +792,7 @@ async function loadMetalPrices(force = false) {
       updated.textContent = `${t.getHours().toString().padStart(2,'0')}:${t.getMinutes().toString().padStart(2,'0')} 업데이트`;
     }
   } catch(_) {
-    if (loading) loading.textContent = '불러오기 실패';
+    if (wrap) wrap.style.display = 'none';
   }
 }
 
