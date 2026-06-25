@@ -672,8 +672,16 @@ function setFxBase(base) {
   const krwBtn = document.getElementById('fx-base-krw');
   if (usdBtn) { usdBtn.style.background = base === 'USD' ? 'var(--accent)' : 'transparent'; usdBtn.style.color = base === 'USD' ? '#fff' : 'var(--text2)'; usdBtn.style.fontWeight = base === 'USD' ? '600' : '400'; }
   if (krwBtn) { krwBtn.style.background = base === 'KRW' ? 'var(--accent)' : 'transparent'; krwBtn.style.color = base === 'KRW' ? '#fff' : 'var(--text2)'; krwBtn.style.fontWeight = base === 'KRW' ? '600' : '400'; }
-  renderFxGrid();
-  if ((base === 'USD' && !_fxDataUSD) || (base === 'KRW' && !_fxDataKRW)) {
+  if (base === 'KRW' && _fxDataUSD?.KRW) {
+    const usdKrw = _fxDataUSD.KRW;
+    _fxDataKRW = { USD: 1 / usdKrw };
+    ['JPY','EUR','CNY','GBP','SGD'].forEach(k => {
+      if (_fxDataUSD[k]) _fxDataKRW[k] = _fxDataUSD[k] / usdKrw;
+    });
+    renderFxGrid();
+  } else if (base === 'USD' && _fxDataUSD) {
+    renderFxGrid();
+  } else {
     loadFxRates(true);
   }
 }
@@ -683,7 +691,8 @@ function renderFxGrid() {
   if (!grid) return;
   const r = _fxBase === 'KRW' ? _fxDataKRW : _fxDataUSD;
   if (!r) return;
-  const pairs = _fxBase === 'USD'
+  const isKRW = _fxBase === 'KRW';
+  const pairs = !isKRW
     ? [
         { pair: 'USD/KRW', val: r.KRW, fmt: v => '₩' + Math.round(v).toLocaleString() },
         { pair: 'USD/JPY', val: r.JPY, fmt: v => '¥' + v.toFixed(2) },
@@ -693,12 +702,12 @@ function renderFxGrid() {
         { pair: 'USD/SGD', val: r.SGD, fmt: v => 'S$' + v.toFixed(4) },
       ]
     : [
-        { pair: 'KRW/USD', val: r.USD, fmt: v => '$' + v.toFixed(6) },
-        { pair: 'KRW/JPY (×100)', val: r.JPY, fmt: v => '¥' + (v * 100).toFixed(4) },
-        { pair: 'KRW/EUR', val: r.EUR, fmt: v => '€' + v.toFixed(6) },
-        { pair: 'KRW/CNY', val: r.CNY, fmt: v => '¥' + v.toFixed(6) },
-        { pair: 'KRW/GBP', val: r.GBP, fmt: v => '£' + v.toFixed(6) },
-        { pair: 'KRW/SGD', val: r.SGD, fmt: v => 'S$' + v.toFixed(6) },
+        { pair: '₩1,000 → USD', val: r.USD, fmt: v => '$' + (v * 1000).toFixed(3) },
+        { pair: '₩1,000 → JPY', val: r.JPY, fmt: v => '¥' + (v * 1000).toFixed(2) },
+        { pair: '₩1,000 → EUR', val: r.EUR, fmt: v => '€' + (v * 1000).toFixed(4) },
+        { pair: '₩1,000 → CNY', val: r.CNY, fmt: v => '¥' + (v * 1000).toFixed(3) },
+        { pair: '₩1,000 → GBP', val: r.GBP, fmt: v => '£' + (v * 1000).toFixed(4) },
+        { pair: '₩1,000 → SGD', val: r.SGD, fmt: v => 'S$' + (v * 1000).toFixed(4) },
       ];
   grid.innerHTML = pairs.map(p => `
     <div class="fx-card">
@@ -708,6 +717,8 @@ function renderFxGrid() {
   grid.style.display = '';
   const loading = document.getElementById('fx-loading');
   if (loading) loading.style.display = 'none';
+  const src = document.getElementById('fx-src-label');
+  if (src && isKRW) src.textContent = (src.textContent || '') + ' · KRW 역산';
 }
 
 async function loadFxRates(force = false) {
@@ -759,10 +770,13 @@ async function loadMetalPrices(force = false) {
       fetch('https://api.kraken.com/0/public/Ticker?pair=XAUUSD').then(r => r.json()),
       fetch('https://api.kraken.com/0/public/Ticker?pair=XAGUSD').then(r => r.json()),
     ]);
-    const gold = goldRes.status === 'fulfilled' && !goldRes.value.error?.length
-      ? parseFloat(goldRes.value.result?.XAUUSD?.c?.[0]) : null;
-    const silver = silverRes.status === 'fulfilled' && !silverRes.value.error?.length
-      ? parseFloat(silverRes.value.result?.XAGUSD?.c?.[0]) : null;
+    const parseKraken = res => {
+      if (res.status !== 'fulfilled' || res.value.error?.length) return null;
+      const first = Object.values(res.value.result || {})[0];
+      return first ? parseFloat(first.c?.[0]) : null;
+    };
+    const gold = parseKraken(goldRes);
+    const silver = parseKraken(silverRes);
     if (!gold && !silver) throw new Error('no data');
     grid.innerHTML = [
       { pair: '금 (XAU/oz)', val: gold,   fmt: v => '$' + Math.round(v).toLocaleString() },
