@@ -294,7 +294,7 @@ function renderLog(data) {
       <td style="font-size:12px">${krwFmt(e.krw)}</td>
       <td><span class="badge ${e.pnl>0?'pos':e.pnl<0?'neg':'neu'}">${e.pnl>=0?'+':''}$${e.pnl.toFixed(2)}</span></td>
       <td><span class="badge ${e.pct>0?'pos':e.pct<0?'neg':'neu'}">${sgn(e.pct,1)}%</span></td>
-      <td>${sgn(e.cumPnl)}$</td>
+      <td>${(e.cumPnl >= 0 ? '+$' : '-$') + Math.abs(e.cumPnl).toFixed(2)}</td>
       <td class="memo-cell">${e.memo||'-'}</td>
       <td style="white-space:nowrap">
         <button class="del-btn" style="border-color:rgba(61,126,255,.3);color:var(--accent);margin-right:4px" onclick="editEntry('${e.date}')">수정</button>
