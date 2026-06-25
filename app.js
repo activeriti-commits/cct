@@ -55,23 +55,42 @@ function dismissPWABanner() {
 db.auth.onAuthStateChange(async (event, session) => {
   if (event === 'PASSWORD_RECOVERY') { location.href = './auth.html'; return; }
   currentUser = session?.user ?? null;
-  if (!currentUser) { location.href = './auth.html'; return; }
   updateAuthUI();
-  await loadFromDB();
+  if (currentUser) {
+    await loadFromDB();
+  } else {
+    applyTheme(S.theme || 'system');
+    render();
+    fetchMarketPrices().then(p => {
+      if (p.btc) { calcBtcPrice = p.btc; const el = document.getElementById('btc-price'); if (el) el.textContent = '$' + Math.round(p.btc).toLocaleString(); }
+      if (p.krwBtc) calcKrwBtcPrice = p.krwBtc;
+      if (p.usdKrw) { realUsdKrw = p.usdKrw; const el = document.getElementById('usd-krw'); if (el) el.textContent = '₩' + Math.round(p.usdKrw).toLocaleString(); }
+      const usdt = document.getElementById('usdt-krw');
+      if (usdt && S.fx) usdt.textContent = '₩' + S.fx.toLocaleString();
+      updatePremiumDisplay(); updateSatsPerUsd();
+    });
+    const logGuest = document.getElementById('log-guest-notice');
+    if (logGuest) logGuest.style.display = '';
+  }
 });
 
 function updateAuthUI() {
-  if (!currentUser) return;
-  const email = currentUser.email || '';
-  const name = email.split('@')[0];
-  document.getElementById('user-avatar').textContent = email[0]?.toUpperCase() || 'U';
-  document.getElementById('user-name').textContent = name;
+  const isGuest = !currentUser;
+  const email = currentUser?.email || '';
+  const name = isGuest ? '게스트' : email.split('@')[0];
+  const initial = isGuest ? '?' : (email[0]?.toUpperCase() || 'U');
+  const avatar = document.getElementById('user-avatar');
+  const uname = document.getElementById('user-name');
+  if (avatar) avatar.textContent = initial;
+  if (uname) uname.textContent = name;
   const sa = document.getElementById('settings-avatar');
   const su = document.getElementById('settings-username');
   const se = document.getElementById('settings-email');
-  if (sa) sa.textContent = email[0]?.toUpperCase() || 'U';
+  if (sa) sa.textContent = initial;
   if (su) su.textContent = name;
-  if (se) se.textContent = email;
+  if (se) se.textContent = isGuest ? '로그인되지 않음' : email;
+  const loginBtns = document.querySelectorAll('.login-required-btn');
+  loginBtns.forEach(b => { b.style.display = isGuest ? '' : 'none'; });
 }
 
 async function doLogout() {
@@ -640,7 +659,52 @@ function searchTx() {
 }
 
 // ── 외환 시장 ─────────────────────────────
-let _fxCacheAt = 0;
+let _fxCacheAt = 0, _fxBase = 'USD', _fxDataUSD = null, _fxDataKRW = null;
+
+function setFxBase(base) {
+  _fxBase = base;
+  const usdBtn = document.getElementById('fx-base-usd');
+  const krwBtn = document.getElementById('fx-base-krw');
+  if (usdBtn) { usdBtn.style.background = base === 'USD' ? 'var(--accent)' : 'transparent'; usdBtn.style.color = base === 'USD' ? '#fff' : 'var(--text2)'; usdBtn.style.fontWeight = base === 'USD' ? '600' : '400'; }
+  if (krwBtn) { krwBtn.style.background = base === 'KRW' ? 'var(--accent)' : 'transparent'; krwBtn.style.color = base === 'KRW' ? '#fff' : 'var(--text2)'; krwBtn.style.fontWeight = base === 'KRW' ? '600' : '400'; }
+  renderFxGrid();
+  if ((base === 'USD' && !_fxDataUSD) || (base === 'KRW' && !_fxDataKRW)) {
+    loadFxRates(true);
+  }
+}
+
+function renderFxGrid() {
+  const grid = document.getElementById('fx-grid');
+  if (!grid) return;
+  const r = _fxBase === 'KRW' ? _fxDataKRW : _fxDataUSD;
+  if (!r) return;
+  const pairs = _fxBase === 'USD'
+    ? [
+        { pair: 'USD/KRW', val: r.KRW, fmt: v => '₩' + Math.round(v).toLocaleString() },
+        { pair: 'USD/JPY', val: r.JPY, fmt: v => '¥' + v.toFixed(2) },
+        { pair: 'USD/EUR', val: r.EUR, fmt: v => '€' + v.toFixed(4) },
+        { pair: 'USD/CNY', val: r.CNY, fmt: v => '¥' + v.toFixed(4) },
+        { pair: 'USD/GBP', val: r.GBP, fmt: v => '£' + v.toFixed(4) },
+        { pair: 'USD/SGD', val: r.SGD, fmt: v => 'S$' + v.toFixed(4) },
+      ]
+    : [
+        { pair: 'KRW/USD', val: r.USD, fmt: v => '$' + v.toFixed(6) },
+        { pair: 'KRW/JPY (×100)', val: r.JPY, fmt: v => '¥' + (v * 100).toFixed(4) },
+        { pair: 'KRW/EUR', val: r.EUR, fmt: v => '€' + v.toFixed(6) },
+        { pair: 'KRW/CNY', val: r.CNY, fmt: v => '¥' + v.toFixed(6) },
+        { pair: 'KRW/GBP', val: r.GBP, fmt: v => '£' + v.toFixed(6) },
+        { pair: 'KRW/SGD', val: r.SGD, fmt: v => 'S$' + v.toFixed(6) },
+      ];
+  grid.innerHTML = pairs.map(p => `
+    <div class="fx-card">
+      <div class="fx-pair">${p.pair}</div>
+      <div class="fx-rate">${p.val != null ? p.fmt(p.val) : '-'}</div>
+    </div>`).join('');
+  grid.style.display = '';
+  const loading = document.getElementById('fx-loading');
+  if (loading) loading.style.display = 'none';
+}
+
 async function loadFxRates(force = false) {
   if (!force && Date.now() - _fxCacheAt < 300000) return;
   const loading = document.getElementById('fx-loading');
@@ -648,32 +712,19 @@ async function loadFxRates(force = false) {
   const updated = document.getElementById('fx-updated');
   if (!grid) return;
   try {
-    const res = await fetch('https://api.frankfurter.app/latest?from=USD');
+    const res = await fetch(`https://api.frankfurter.app/latest?from=${_fxBase}`);
     if (!res.ok) throw new Error();
     const d = await res.json();
-    const r = d.rates;
-    const pairs = [
-      { pair: 'USD/KRW', val: r.KRW, fmt: v => '₩' + Math.round(v).toLocaleString() },
-      { pair: 'USD/JPY', val: r.JPY, fmt: v => '¥' + v.toFixed(2) },
-      { pair: 'USD/EUR', val: r.EUR, fmt: v => '€' + v.toFixed(4) },
-      { pair: 'USD/CNY', val: r.CNY, fmt: v => '¥' + v.toFixed(4) },
-      { pair: 'USD/GBP', val: r.GBP, fmt: v => '£' + v.toFixed(4) },
-      { pair: 'USD/SGD', val: r.SGD, fmt: v => 'S$' + v.toFixed(4) },
-    ];
-    grid.innerHTML = pairs.map(p => `
-      <div class="fx-card">
-        <div class="fx-pair">${p.pair}</div>
-        <div class="fx-rate">${p.val ? p.fmt(p.val) : '-'}</div>
-      </div>`).join('');
+    if (_fxBase === 'USD') _fxDataUSD = d.rates;
+    else _fxDataKRW = d.rates;
     const src = document.getElementById('fx-src-label');
     if (src) src.textContent = 'Frankfurter · ECB 유럽중앙은행 기준';
-    if (loading) loading.style.display = 'none';
-    grid.style.display = '';
     _fxCacheAt = Date.now();
     if (updated) {
       const t = new Date();
       updated.textContent = `${t.getHours().toString().padStart(2,'0')}:${t.getMinutes().toString().padStart(2,'0')} 업데이트`;
     }
+    renderFxGrid();
   } catch(_) {
     if (loading) loading.textContent = '불러오기 실패';
   }
