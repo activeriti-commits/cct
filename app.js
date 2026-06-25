@@ -416,6 +416,7 @@ function updateTopBar() {
 
 // ── CRUD ─────────────────────────────────────
 function addEntry() {
+  if (!currentUser) { toast('매매기록을 저장하려면 로그인하세요'); return; }
   const date  = document.getElementById('inp-date').value;
   const asset = parseFloat(document.getElementById('inp-asset').value);
   const memo  = document.getElementById('inp-memo').value.trim();
@@ -711,22 +712,33 @@ async function loadFxRates(force = false) {
   const grid    = document.getElementById('fx-grid');
   const updated = document.getElementById('fx-updated');
   if (!grid) return;
-  try {
-    const res = await fetch(`https://api.frankfurter.app/latest?from=${_fxBase}`);
-    if (!res.ok) throw new Error();
-    const d = await res.json();
-    if (_fxBase === 'USD') _fxDataUSD = d.rates;
-    else _fxDataKRW = d.rates;
+  const setFxData = (rates, label) => {
+    if (_fxBase === 'USD') _fxDataUSD = rates;
+    else _fxDataKRW = rates;
     const src = document.getElementById('fx-src-label');
-    if (src) src.textContent = 'Frankfurter · ECB 유럽중앙은행 기준';
+    if (src) src.textContent = label;
     _fxCacheAt = Date.now();
     if (updated) {
       const t = new Date();
       updated.textContent = `${t.getHours().toString().padStart(2,'0')}:${t.getMinutes().toString().padStart(2,'0')} 업데이트`;
     }
     renderFxGrid();
+  };
+  try {
+    const res = await fetch(`https://api.frankfurter.app/latest?from=${_fxBase}`);
+    if (!res.ok) throw new Error('frankfurter');
+    const d = await res.json();
+    setFxData(d.rates, 'Frankfurter · ECB 유럽중앙은행 기준');
   } catch(_) {
-    if (loading) loading.textContent = '불러오기 실패';
+    if (_fxBase !== 'USD') { if (loading) loading.textContent = '불러오기 실패'; return; }
+    try {
+      const res2 = await fetch('https://open.er-api.com/v6/latest/USD');
+      if (!res2.ok) throw new Error();
+      const d2 = await res2.json();
+      setFxData(d2.rates, 'ExchangeRate-API 기준');
+    } catch(_2) {
+      if (loading) loading.textContent = '불러오기 실패';
+    }
   }
 }
 
@@ -739,13 +751,15 @@ async function loadMetalPrices(force = false) {
   const updated = document.getElementById('metals-updated');
   if (!grid) return;
   try {
-    const res = await fetch('https://api.metals.live/v1/spot/gold,silver');
-    if (!res.ok) throw new Error();
-    const data = await res.json();
-    const vals = {};
-    data.forEach(item => Object.assign(vals, item));
-    const gold = vals.gold;
-    const silver = vals.silver;
+    const [goldRes, silverRes] = await Promise.allSettled([
+      fetch('https://api.kraken.com/0/public/Ticker?pair=XAUUSD').then(r => r.json()),
+      fetch('https://api.kraken.com/0/public/Ticker?pair=XAGUSD').then(r => r.json()),
+    ]);
+    const gold = goldRes.status === 'fulfilled' && !goldRes.value.error?.length
+      ? parseFloat(goldRes.value.result?.XAUUSD?.c?.[0]) : null;
+    const silver = silverRes.status === 'fulfilled' && !silverRes.value.error?.length
+      ? parseFloat(silverRes.value.result?.XAGUSD?.c?.[0]) : null;
+    if (!gold && !silver) throw new Error('no data');
     grid.innerHTML = [
       { pair: '금 (XAU/oz)', val: gold,   fmt: v => '$' + Math.round(v).toLocaleString() },
       { pair: '은 (XAG/oz)', val: silver, fmt: v => '$' + v.toFixed(2) },
