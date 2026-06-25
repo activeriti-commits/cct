@@ -674,9 +674,9 @@ function setFxBase(base) {
   if (krwBtn) { krwBtn.style.background = base === 'KRW' ? 'var(--accent)' : 'transparent'; krwBtn.style.color = base === 'KRW' ? '#fff' : 'var(--text2)'; krwBtn.style.fontWeight = base === 'KRW' ? '600' : '400'; }
   if (base === 'KRW' && _fxDataUSD?.KRW) {
     const usdKrw = _fxDataUSD.KRW;
-    _fxDataKRW = { USD: 1 / usdKrw };
+    _fxDataKRW = { USD: usdKrw };
     ['JPY','EUR','CNY','GBP','SGD'].forEach(k => {
-      if (_fxDataUSD[k]) _fxDataKRW[k] = _fxDataUSD[k] / usdKrw;
+      if (_fxDataUSD[k]) _fxDataKRW[k] = usdKrw / _fxDataUSD[k];
     });
     renderFxGrid();
   } else if (base === 'USD' && _fxDataUSD) {
@@ -702,12 +702,12 @@ function renderFxGrid() {
         { pair: 'USD/SGD', val: r.SGD, fmt: v => 'S$' + v.toFixed(4) },
       ]
     : [
-        { pair: '₩1,000 → USD', val: r.USD, fmt: v => '$' + (v * 1000).toFixed(3) },
-        { pair: '₩1,000 → JPY', val: r.JPY, fmt: v => '¥' + (v * 1000).toFixed(2) },
-        { pair: '₩1,000 → EUR', val: r.EUR, fmt: v => '€' + (v * 1000).toFixed(4) },
-        { pair: '₩1,000 → CNY', val: r.CNY, fmt: v => '¥' + (v * 1000).toFixed(3) },
-        { pair: '₩1,000 → GBP', val: r.GBP, fmt: v => '£' + (v * 1000).toFixed(4) },
-        { pair: '₩1,000 → SGD', val: r.SGD, fmt: v => 'S$' + (v * 1000).toFixed(4) },
+        { pair: 'USD/원',        val: r.USD, fmt: v => '₩' + Math.round(v).toLocaleString() },
+        { pair: 'JPY (×100)/원', val: r.JPY, fmt: v => '₩' + Math.round(v * 100).toLocaleString() },
+        { pair: 'EUR/원',        val: r.EUR, fmt: v => '₩' + Math.round(v).toLocaleString() },
+        { pair: 'CNY/원',        val: r.CNY, fmt: v => '₩' + Math.round(v).toLocaleString() },
+        { pair: 'GBP/원',        val: r.GBP, fmt: v => '₩' + Math.round(v).toLocaleString() },
+        { pair: 'SGD/원',        val: r.SGD, fmt: v => '₩' + Math.round(v).toLocaleString() },
       ];
   grid.innerHTML = pairs.map(p => `
     <div class="fx-card">
@@ -717,8 +717,6 @@ function renderFxGrid() {
   grid.style.display = '';
   const loading = document.getElementById('fx-loading');
   if (loading) loading.style.display = 'none';
-  const src = document.getElementById('fx-src-label');
-  if (src && isKRW) src.textContent = (src.textContent || '') + ' · KRW 역산';
 }
 
 async function loadFxRates(force = false) {
